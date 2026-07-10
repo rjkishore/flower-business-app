@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1b5e20">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="🌸 Flowers">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>🌸 Flower Business</title>
+<style>
+:root{
+  --gd:#1b5e20;--gm:#2e7d32;--gl:#c8e6c9;--gp:#e8f5e9;--gb:#f1f8e9;
+  --teal:#00695c;--org:#fff3e0;--ord:#e65100;--red:#c62828;--blu:#1565c0;
+  --wht:#fff;--txt:#212121;--txl:#666;--rad:14px;--shd:0 2px 14px rgba(0,0,0,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);color:var(--txt);display:flex;flex-direction:column}
+
+/* ── Install banner ── */
+#install-banner{display:none;background:#e8f5e9;padding:10px 14px;font-size:12px;color:var(--gd);border-bottom:1px solid var(--gl);align-items:center;gap:10px;flex-shrink:0}
+#install-banner button{padding:6px 14px;background:var(--gm);color:#fff;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer}
+#install-banner .close-btn{background:none;color:#999;padding:4px 8px;font-size:16px}
+
+/* ── Header ── */
+.hdr{background:var(--gd);color:#fff;padding:env(safe-area-inset-top,14px) 16px 0;padding-top:calc(env(safe-area-inset-top,0px) + 14px);flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.hdr h1{font-size:17px;font-weight:700}
+.hdr p{font-size:11px;opacity:.8}
+.sync{font-size:11px;opacity:.8}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:middle}
+.dok{background:#69f0ae}.derr{background:#ef5350}.dsav{background:#ffb300;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Tab bar ── */
+.tab-bar{display:flex;background:var(--gd);border-top:1px solid rgba(255,255,255,.1);flex-shrink:0}
+.tb{flex:1;padding:9px 4px 7px;border:none;background:transparent;color:rgba(255,255,255,.5);font-size:10px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;border-bottom:3px solid transparent;transition:all .2s}
+.tb .ti{font-size:20px}
+.tb.on{color:#fff;border-bottom-color:#69f0ae}
+
+/* ── Scroll area ── */
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Pages ── */
+.pg{display:none;padding:14px;padding-bottom:30px}
+.pg.on{display:block}
+
+/* ── Cards ── */
+.card{background:#fff;border-radius:var(--rad);padding:14px;margin-bottom:12px;box-shadow:var(--shd)}
+.ct{font-size:10px;font-weight:700;color:var(--gm);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+
+/* ── Fields ── */
+.fld{margin-bottom:10px}
+.fld label{display:block;font-size:11px;color:var(--txl);font-weight:600;margin-bottom:4px}
+.fld input,.fld select{width:100%;padding:12px;border:1.5px solid var(--gl);border-radius:10px;font-size:15px;color:var(--txt);background:var(--gp);outline:none;appearance:none;-webkit-appearance:none}
+.fld input:focus,.fld select:focus{border-color:var(--gm);background:#fff}
+.sw{position:relative}.sw::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gm);pointer-events:none;font-size:18px}
+
+/* ── Flower checkboxes ── */
+.fl-list{display:flex;flex-direction:column;gap:8px}
+.fl-item{border:1.5px solid var(--gl);border-radius:12px;overflow:hidden;background:#fff;transition:all .15s}
+.fl-item.on{border-color:var(--gm);background:var(--gp)}
+.fl-hdr{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;user-select:none}
+.fl-chk{width:24px;height:24px;border-radius:7px;border:2px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;transition:all .2s;font-weight:700}
+.fl-item.on .fl-chk{background:var(--gm);border-color:var(--gm);color:#fff}
+.fl-nm{font-size:14px;flex:1;line-height:1.3}
+.fl-ins{display:none;padding:0 14px 12px;gap:8px;align-items:center}
+.fl-item.on .fl-ins{display:flex}
+.fl-ins input{flex:1;padding:10px;border:1.5px solid var(--gl);border-radius:9px;font-size:14px;background:#fff;outline:none;min-width:0}
+.fl-ins input:focus{border-color:var(--gm)}
+.fl-ins label{font-size:10px;color:var(--txl);font-weight:600;white-space:nowrap}
+
+/* ── Payment mode ── */
+.mt{display:flex;gap:8px}
+.mb{flex:1;padding:12px;border:2px solid var(--gl);border-radius:11px;background:#fff;font-size:14px;font-weight:700;color:var(--txl);cursor:pointer;text-align:center;transition:all .2s}
+.mb.on{background:var(--gm);border-color:var(--gm);color:#fff}
+
+/* ── Total bar ── */
+.tot{background:var(--gp);border:1.5px solid var(--gl);border-radius:11px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.tot-l{font-size:12px;color:var(--txl);font-weight:600}
+.tot-v{font-size:22px;font-weight:800;color:var(--gd)}
+
+/* ── Submit button ── */
+.btn-s{width:100%;padding:16px;border:none;border-radius:14px;background:var(--gm);color:#fff;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(46,125,50,.35);transition:all .2s;margin-top:4px;letter-spacing:.2px}
+.btn-s:active{transform:scale(.98);box-shadow:none}
+.btn-s:disabled{background:#bbb;box-shadow:none}
+.spinner{display:inline-block;width:16px;height:16px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--gd);color:#fff;padding:13px 24px;border-radius:30px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:9999;transition:transform .3s;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--red)}
+
+/* ── History ── */
+.hi{background:#fff;border-radius:var(--rad);padding:14px;margin-bottom:10px;box-shadow:var(--shd);border-left:4px solid var(--gm)}
+.hi.pur{border-left-color:var(--teal)}
+.hi-date{font-size:11px;color:var(--txl);margin-bottom:3px}
+.hi-name{font-size:15px;font-weight:700;color:var(--gd)}
+.hi-fls{font-size:12px;color:var(--txl);margin-top:3px;line-height:1.5}
+.hi-amts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.pill{font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px}
+.p-b{background:var(--gp);color:var(--gd)}
+.p-d{background:var(--org);color:var(--ord)}
+.p-p{background:#e8f5e9;color:var(--gm)}
+
+/* ── Setup ── */
+.sb{background:#fff;border-radius:var(--rad);padding:16px;margin-bottom:12px;box-shadow:var(--shd)}
+.sb h3{color:var(--gd);font-size:14px;margin-bottom:8px;font-weight:700}
+.sb p{font-size:12px;color:var(--txl);line-height:1.6}
+.row{display:flex;gap:8px;margin-top:10px}
+.row input{flex:1;padding:11px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp)}
+.btn-add{padding:11px 16px;background:var(--gm);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f0f0f0;font-size:13px}
+.del-btn{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--gp);color:var(--gd);padding:9px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gl);margin-top:8px}
+.empty{text-align:center;padding:40px 20px;color:var(--txl)}
+.empty .ei{font-size:48px;margin-bottom:10px}
+.empty p{font-size:14px}
+
+/* ── Summary cards ── */
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sum-card{background:#fff;border-radius:var(--rad);padding:14px;box-shadow:var(--shd);text-align:center}
+.sum-card .val{font-size:20px;font-weight:800;margin-bottom:4px}
+.sum-card .lbl{font-size:10px;color:var(--txl);font-weight:600;text-transform:uppercase}
+.sum-card.profit .val{color:var(--gd)}
+.sum-card.spent .val{color:var(--ord)}
+.sum-card.billed .val{color:var(--blu)}
+.sum-card.due .val{color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- Install Banner (shown on non-iOS when installable) -->
+<div id="install-banner">
+  <span>📲 Install this app on your phone!</span>
+  <button onclick="installApp()">Install</button>
+  <button class="close-btn" onclick="closeBanner()">✕</button>
+</div>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <h1>🌸 Flower Business</h1>
+      <p>மலர் வணிகம் – Daily Tracker</p>
+    </div>
+    <span class="sync" id="sync"></span>
+  </div>
+  <div class="tab-bar">
+    <button class="tb on" onclick="showTab('sale')"    id="tb-sale">    <span class="ti">🌺</span>Sale</button>
+    <button class="tb"    onclick="showTab('buy')"     id="tb-buy">     <span class="ti">🛒</span>Buy</button>
+    <button class="tb"    onclick="showTab('history')" id="tb-history"> <span class="ti">📋</span>History</button>
+    <button class="tb"    onclick="showTab('summary')" id="tb-summary"> <span class="ti">📊</span>Summary</button>
+    <button class="tb"    onclick="showTab('setup')"   id="tb-setup">   <span class="ti">⚙️</span>Setup</button>
+  </div>
+</div>
+
+<!-- Scrollable content -->
+<div class="scroll-area">
+
+<!-- ══ SALE ══ -->
+<div class="pg on" id="pg-sale">
+  <div class="card">
+    <div class="ct">📅 Date & Customer</div>
+    <div class="fld"><label>Date</label><input type="date" id="s-date"></div>
+    <div class="fld"><label>Customer Name</label>
+      <div class="sw"><select id="s-cust"><option value="">-- Select Customer --</option></select></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">🌸 Tick the flowers given today</div>
+    <div class="fl-list" id="s-flowers"></div>
+    <div class="tot"><span class="tot-l">Total Billed</span><span class="tot-v" id="s-total">₹ 0</span></div>
+  </div>
+  <div class="card">
+    <div class="ct">💰 Payment Details</div>
+    <div class="fld"><label>Payment Mode</label>
+      <div class="mt">
+        <button class="mb on" id="mb-d" onclick="setMode('Daily')">Daily</button>
+        <button class="mb"    id="mb-m" onclick="setMode('Monthly')">Monthly</button>
+      </div>
+    </div>
+    <div class="fld"><label>Amount Collected (₹)</label>
+      <input type="number" id="s-coll" placeholder="0" min="0" inputmode="numeric">
+    </div>
+    <div class="fld"><label>Notes (optional)</label>
+      <input type="text" id="s-notes" placeholder="Any notes...">
+    </div>
+  </div>
+  <button class="btn-s" id="btn-sale" onclick="submitSale()">✅ Add Sale</button>
+</div>
+
+<!-- ══ BUY ══ -->
+<div class="pg" id="pg-buy">
+  <div class="card">
+    <div class="ct">📅 Purchase Date</div>
+    <div class="fld"><input type="date" id="p-date"></div>
+  </div>
+  <div class="card">
+    <div class="ct">🌸 Tick flowers bought at market today</div>
+    <div class="fl-list" id="p-flowers"></div>
+    <div class="tot"><span class="tot-l">Total Spent at Market</span><span class="tot-v" id="p-total">₹ 0</span></div>
+  </div>
+  <button class="btn-s" id="btn-pur" onclick="submitPurchase()">✅ Add Purchase</button>
+</div>
+
+<!-- ══ HISTORY ══ -->
+<div class="pg" id="pg-history">
+  <div id="hist-list"><div class="empty"><div class="ei">📋</div><p>Loading entries...</p></div></div>
+</div>
+
+<!-- ══ SUMMARY ══ -->
+<div class="pg" id="pg-summary">
+  <div class="card">
+    <div class="ct">📅 Select Month</div>
+    <div style="display:flex;gap:8px;">
+      <div class="sw" style="flex:1"><select id="sum-month">
+        <option value="1">January</option><option value="2">February</option>
+        <option value="3">March</option><option value="4">April</option>
+        <option value="5">May</option><option value="6">June</option>
+        <option value="7" selected>July</option><option value="8">August</option>
+        <option value="9">September</option><option value="10">October</option>
+        <option value="11">November</option><option value="12">December</option>
+      </select></div>
+      <input type="number" id="sum-year" value="2026" min="2024" max="2030" style="width:90px;padding:12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);">
+      <button class="btn-add" onclick="loadSummary()">Go</button>
+    </div>
+  </div>
+  <div class="sum-grid">
+    <div class="sum-card spent"><div class="val" id="sum-spent">₹0</div><div class="lbl">Market Spent</div></div>
+    <div class="sum-card billed"><div class="val" id="sum-billed">₹0</div><div class="lbl">Total Billed</div></div>
+    <div class="sum-card profit"><div class="val" id="sum-profit">₹0</div><div class="lbl">Gross Profit</div></div>
+    <div class="sum-card due"><div class="val" id="sum-due">₹0</div><div class="lbl">Outstanding</div></div>
+  </div>
+  <div class="card">
+    <div class="ct">👤 Customer-wise</div>
+    <div id="sum-customers"><p style="font-size:13px;color:#999;text-align:center;padding:10px">Select month and tap Go</p></div>
+  </div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div class="pg" id="pg-setup">
+  <div class="sb">
+    <h3>🔥 Firebase Connection</h3>
+    <div class="badge">🔥 Connected – flower-business-95952</div>
+    <p style="margin-top:8px;font-size:11px">Data saves to Firebase Realtime Database. Free forever! ✅</p>
+  </div>
+  <div class="sb">
+    <h3>📲 Install as App</h3>
+    <p>On iPhone: tap <b>Share → Add to Home Screen</b><br>On Android: tap <b>Menu (⋮) → Add to Home Screen</b></p>
+    <div id="install-btn-wrap" style="margin-top:10px;display:none">
+      <button class="btn-add" style="width:100%;padding:12px;" onclick="installApp()">📲 Install App Now</button>
+    </div>
+  </div>
+  <div class="sb">
+    <h3>👤 Customers</h3>
+    <div id="cust-manage"></div>
+    <div class="row">
+      <input type="text" id="new-cust" placeholder="Add new customer name...">
+      <button class="btn-add" onclick="addCustomer()">Add</button>
+    </div>
+  </div>
+  <div class="sb">
+    <h3>🌸 Flowers</h3>
+    <div id="flower-manage"></div>
+    <div class="row">
+      <input type="text" id="new-flower" placeholder="Tamil or English name...">
+      <button class="btn-add" onclick="addFlower()">Add</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end scroll-area -->
+<div class="toast" id="toast"></div>
+
+<script>
+const RTDB = "https://flower-business-95952-default-rtdb.firebaseio.com";
+const $ = id => document.getElementById(id);
+
+let FLOWERS = JSON.parse(localStorage.getItem('flo') || JSON.stringify([
+  "மல்லிகை - Jasmine","ரோஜா - Rose","சாமந்தி - Marigold",
+  "தாமரை - Lotus","கனகாம்பரம் - Crossandra","சம்பங்கி - Tuberose",
+  "சூரியகாந்தி - Sunflower","தாழம்பூ - Lily","முல்லை - Mullai",
+  "பவளமல்லி - Chrysanthemum","வேப்பம்பூ - Neem Flower"
+]));
+
+let CUSTOMERS = JSON.parse(localStorage.getItem('cus') || JSON.stringify([
+  "Ramesh Kumar","Priya Lakshmi","Suresh Babu","Anitha Devi","Kiran Reddy",
+  "Meena S","Venkat Rao","Kavitha M","Dinesh J","Saranya R",
+  "Arun Kumar","Bhavani S","Chandran R","Deepa M","Eswaran K"
+]));
+
+let payMode = 'Daily';
+let deferredPrompt = null;
+
+// PWA install
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  $('install-banner').style.display = 'flex';
+  $('install-btn-wrap').style.display = 'block';
+});
+window.installApp = async function() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') toast('✅ App installed!');
+  deferredPrompt = null;
+  $('install-banner').style.display = 'none';
+};
+window.closeBanner = () => $('install-banner').style.display = 'none';
+
+// Service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// Firebase REST
+async function fbPost(path, data) {
+  const r = await fetch(`${RTDB}/${path}.json`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!r.ok) throw new Error('Firebase: '+r.status);
+  return r.json();
+}
+async function fbGet(path) {
+  const r = await fetch(`${RTDB}/${path}.json`);
+  if(!r.ok) throw new Error('Firebase: '+r.status);
+  return r.json();
+}
+
+// Sync dot
+function setSync(s) {
+  const el=$('sync');
+  if(s==='ok')  el.innerHTML='<span class="dot dok"></span>Online';
+  else if(s==='err') el.innerHTML='<span class="dot derr"></span>Offline';
+  else el.innerHTML='<span class="dot dsav"></span>Saving...';
+}
+
+// Toast
+function toast(msg,err) {
+  const el=$('toast');
+  el.textContent=msg; el.className='toast show'+(err?' err':'');
+  setTimeout(()=>{el.className='toast'+(err?' err':'');},3000);
+}
+
+// Tabs
+function showTab(t) {
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  $('pg-'+t).classList.add('on'); $('tb-'+t).classList.add('on');
+  document.querySelector('.scroll-area').scrollTop = 0;
+  if(t==='history') loadHistory();
+  if(t==='summary') loadSummary();
+}
+
+// Today
+function setToday() {
+  const d=new Date();
+  const v=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  $('s-date').value=v; $('p-date').value=v;
+  $('sum-month').value=d.getMonth()+1; $('sum-year').value=d.getFullYear();
+}
+
+// Build flower list
+function buildFlowers(cid,prefix) {
+  const c=$(cid); c.innerHTML='';
+  FLOWERS.forEach((fl,i)=>{
+    const d=document.createElement('div');
+    d.className='fl-item'; d.id=`${prefix}_i_${i}`;
+    const hasPur=prefix==='p';
+    d.innerHTML=`
+      <div class="fl-hdr" onclick="toggleFl('${prefix}',${i})">
+        <div class="fl-chk" id="${prefix}_c_${i}"></div>
+        <span class="fl-nm">${fl}</span>
+      </div>
+      <div class="fl-ins" id="${prefix}_in_${i}">
+        ${hasPur?`<div style="flex:1"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
+        <div style="width:80px"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">Unit</label><input type="text" id="${prefix}_u_${i}" placeholder="kg/bunch"></div>`
+        :`<div style="flex:1"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>`}
+        <div style="flex:1"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">₹ Price</label><input type="number" id="${prefix}_p_${i}" placeholder="0" min="0" inputmode="numeric" oninput="calcTot('${prefix}')"></div>
+      </div>`;
+    c.appendChild(d);
+  });
+}
+
+function toggleFl(prefix,i) {
+  const item=$(`${prefix}_i_${i}`),chk=$(`${prefix}_c_${i}`);
+  const on=item.classList.toggle('on');
+  chk.textContent=on?'✓':'';
+  if(!on){const p=$(`${prefix}_p_${i}`),q=$(`${prefix}_q_${i}`);if(p)p.value='';if(q)q.value='';}
+  calcTot(prefix);
+}
+
+function calcTot(prefix) {
+  let t=0;
+  FLOWERS.forEach((_,i)=>{const item=$(`${prefix}_i_${i}`);if(item&&item.classList.contains('on'))t+=parseFloat($(`${prefix}_p_${i}`).value)||0;});
+  $(prefix==='s'?'s-total':'p-total').textContent='₹ '+t.toLocaleString('en-IN');
+}
+
+// Customer dropdown
+function buildCusts() {
+  const sel=$('s-cust');
+  sel.innerHTML='<option value="">-- Select Customer --</option>';
+  CUSTOMERS.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o);});
+}
+
+// Mode
+function setMode(mode) {
+  payMode=mode;
+  $('mb-d').className='mb'+(mode==='Daily'?' on':'');
+  $('mb-m').className='mb'+(mode==='Monthly'?' on':'');
+  if(mode==='Monthly') $('s-coll').value='0';
+}
+
+// Submit Sale
+async function submitSale() {
+  const dateVal=$('s-date').value, customer=$('s-cust').value;
+  if(!dateVal){toast('Please select a date!',true);return;}
+  if(!customer){toast('Please select a customer!',true);return;}
+  let flowers=[];
+  let hasError=false;
+  FLOWERS.forEach((fl,i)=>{
+    if($(`s_i_${i}`)&&$(`s_i_${i}`).classList.contains('on')&&!hasError){
+      const qty=parseFloat($(`s_q_${i}`).value)||0;
+      const price=parseFloat($(`s_p_${i}`).value)||0;
+      if(price===0){toast('Enter price for: '+fl.split('-')[0],true);hasError=true;return;}
+      flowers.push({name:fl,qty,price});
+    }
+  });
+  if(hasError)return;
+  if(flowers.length===0){toast('Tick at least one flower!',true);return;}
+  const collected=parseFloat($('s-coll').value)||0;
+  const notes=$('s-notes').value;
+  const totalBilled=flowers.reduce((s,f)=>s+f.price,0);
+  const balance=totalBilled-collected;
+  const btn=$('btn-sale');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving...';
+  setSync('saving');
+  try {
+    const groupTs=Date.now();
+    for(let idx=0;idx<flowers.length;idx++){
+      const fl=flowers[idx];
+      await fbPost('sales',{date:dateVal,customer,flower:fl.name,qty:fl.qty,price:fl.price,
+        payMode:idx===0?payMode:'',collected:idx===0?collected:0,balance:idx===0?balance:0,
+        totalBilled:idx===0?totalBilled:0,notes:idx===0?notes:'',groupTs,ts:groupTs});
+    }
+    setSync('ok'); toast('✅ Sale saved!'); resetSale();
+  } catch(e){setSync('err');toast('Error! Check internet.',true);console.error(e);}
+  btn.disabled=false; btn.innerHTML='✅ Add Sale';
+}
+
+// Submit Purchase
+async function submitPurchase() {
+  const dateVal=$('p-date').value;
+  if(!dateVal){toast('Please select a date!',true);return;}
+  let purchases=[]; let hasError=false;
+  FLOWERS.forEach((fl,i)=>{
+    if($(`p_i_${i}`)&&$(`p_i_${i}`).classList.contains('on')&&!hasError){
+      const qty=parseFloat($(`p_q_${i}`).value)||0;
+      const unit=($(`p_u_${i}`)&&$(`p_u_${i}`).value)||'bunch';
+      const price=parseFloat($(`p_p_${i}`).value)||0;
+      if(qty===0||price===0){toast('Enter qty & price for: '+fl.split('-')[0],true);hasError=true;return;}
+      purchases.push({name:fl,qty,unit,price,total:qty*price});
+    }
+  });
+  if(hasError)return;
+  if(purchases.length===0){toast('Tick at least one flower!',true);return;}
+  const btn=$('btn-pur');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving...';
+  setSync('saving');
+  try {
+    for(const p of purchases)
+      await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,buyPrice:p.price,totalCost:p.total,ts:Date.now()});
+    setSync('ok'); toast('✅ Purchase saved!'); resetPurchase();
+  } catch(e){setSync('err');toast('Error! Check internet.',true);}
+  btn.disabled=false; btn.innerHTML='✅ Add Purchase';
+}
+
+// Load History
+async function loadHistory() {
+  const el=$('hist-list');
+  el.innerHTML='<div class="empty"><div class="ei">⏳</div><p>Loading...</p></div>';
+  try {
+    const [sales,purs]=await Promise.all([fbGet('sales'),fbGet('purchases')]);
+    let items=[];
+    if(sales){
+      const grouped={};
+      Object.values(sales).forEach(s=>{
+        if(s.totalBilled>0){
+          const key=s.groupTs||s.ts;
+          if(!grouped[key]) grouped[key]={...s,flowers:[s.flower]};
+          else grouped[key].flowers.push(s.flower);
+        }
+      });
+      Object.values(grouped).forEach(g=>items.push({...g,_type:'sale'}));
+    }
+    if(purs) Object.values(purs).forEach(p=>items.push({...p,_type:'pur'}));
+    items.sort((a,b)=>b.ts-a.ts);
+    if(items.length===0){el.innerHTML='<div class="empty"><div class="ei">📋</div><p>No entries yet!</p></div>';return;}
+    el.innerHTML=items.slice(0,50).map(item=>{
+      if(item._type==='sale'){
+        const fls=[...new Set(item.flowers||[item.flower])].map(f=>f.split('-')[0].trim()).join(', ');
+        return `<div class="hi">
+          <div class="hi-date">${item.date} · ${item.payMode||'Daily'}</div>
+          <div class="hi-name">${item.customer}</div>
+          <div class="hi-fls">🌸 ${fls}</div>
+          <div class="hi-amts">
+            <span class="pill p-b">Billed ₹${item.totalBilled}</span>
+            <span class="pill ${item.balance>0?'p-d':'p-p'}">${item.balance>0?'Due ₹'+item.balance:'✓ Paid'}</span>
+          </div></div>`;
+      } else {
+        return `<div class="hi pur">
+          <div class="hi-date">${item.date} · Market Purchase</div>
+          <div class="hi-name">🛒 ${item.flower.split('-')[0].trim()}</div>
+          <div class="hi-fls">${item.qty} ${item.unit} × ₹${item.buyPrice}/unit</div>
+          <div class="hi-amts"><span class="pill p-b">Spent ₹${item.totalCost}</span></div></div>`;
+      }
+    }).join('');
+    setSync('ok');
+  } catch(e){el.innerHTML='<div class="empty"><div class="ei">⚠️</div><p>Could not load. Check internet!</p></div>';setSync('err');}
+}
+
+// Summary
+async function loadSummary() {
+  const month=parseInt($('sum-month').value);
+  const year=parseInt($('sum-year').value);
+  const startD=new Date(year,month-1,1).toISOString().slice(0,10);
+  const endD=new Date(year,month,0).toISOString().slice(0,10);
+  try {
+    const [sales,purs]=await Promise.all([fbGet('sales'),fbGet('purchases')]);
+    let totalSpent=0,totalBilled=0,totalCollected=0;
+    const custMap={};
+    if(purs) Object.values(purs).filter(p=>p.date>=startD&&p.date<=endD).forEach(p=>totalSpent+=p.totalCost||0);
+    if(sales){
+      Object.values(sales).filter(s=>s.date>=startD&&s.date<=endD&&s.totalBilled>0).forEach(s=>{
+        totalBilled+=s.totalBilled||0; totalCollected+=s.collected||0;
+        if(!custMap[s.customer]) custMap[s.customer]={billed:0,collected:0,balance:0};
+        custMap[s.customer].billed+=s.totalBilled||0;
+        custMap[s.customer].collected+=s.collected||0;
+        custMap[s.customer].balance+=s.balance||0;
+      });
+    }
+    const profit=totalBilled-totalSpent;
+    const outstanding=totalBilled-totalCollected;
+    $('sum-spent').textContent='₹'+totalSpent.toLocaleString('en-IN');
+    $('sum-billed').textContent='₹'+totalBilled.toLocaleString('en-IN');
+    $('sum-profit').textContent='₹'+profit.toLocaleString('en-IN');
+    $('sum-due').textContent='₹'+outstanding.toLocaleString('en-IN');
+    const custs=Object.entries(custMap).sort((a,b)=>b[1].billed-a[1].billed);
+    if(custs.length===0){$('sum-customers').innerHTML='<p style="font-size:13px;color:#999;text-align:center;padding:10px">No sales this month</p>';return;}
+    $('sum-customers').innerHTML=custs.map(([name,d])=>`
+      <div class="list-item">
+        <div><div style="font-weight:600;font-size:13px">${name}</div>
+        <div style="font-size:11px;color:#999">Billed ₹${d.billed} · Collected ₹${d.collected}</div></div>
+        <span class="pill ${d.balance>0?'p-d':'p-p'}" style="flex-shrink:0">${d.balance>0?'Due ₹'+d.balance:'✓ Paid'}</span>
+      </div>`).join('');
+    setSync('ok');
+  } catch(e){toast('Error loading summary!',true);setSync('err');}
+}
+
+// Reset
+function resetSale(){
+  FLOWERS.forEach((_,i)=>{const item=$(`s_i_${i}`);if(item){item.classList.remove('on');$(`s_c_${i}`).textContent='';$(`s_q_${i}`).value='';$(`s_p_${i}`).value='';}});
+  $('s-coll').value='';$('s-notes').value='';$('s-total').textContent='₹ 0';$('s-cust').value='';setToday();
+}
+function resetPurchase(){
+  FLOWERS.forEach((_,i)=>{const item=$(`p_i_${i}`);if(item){item.classList.remove('on');$(`p_c_${i}`).textContent='';$(`p_q_${i}`).value='';if($(`p_u_${i}`))$(`p_u_${i}`).value='';$(`p_p_${i}`).value='';}});
+  $('p-total').textContent='₹ 0';setToday();
+}
+
+// Setup
+function buildSetup(){
+  $('cust-manage').innerHTML=CUSTOMERS.map((c,i)=>`<div class="list-item"><span>${c}</span><button class="del-btn" onclick="removeCust(${i})">✕</button></div>`).join('');
+  $('flower-manage').innerHTML=FLOWERS.map((f,i)=>`<div class="list-item"><span>${f}</span><button class="del-btn" onclick="removeFlower(${i})">✕</button></div>`).join('');
+}
+function addCustomer(){const inp=$('new-cust'),n=inp.value.trim();if(!n)return;CUSTOMERS.push(n);localStorage.setItem('cus',JSON.stringify(CUSTOMERS));inp.value='';buildCusts();buildSetup();toast('✅ Customer added!');}
+function removeCust(i){CUSTOMERS.splice(i,1);localStorage.setItem('cus',JSON.stringify(CUSTOMERS));buildCusts();buildSetup();}
+function addFlower(){const inp=$('new-flower'),n=inp.value.trim();if(!n)return;FLOWERS.push(n);localStorage.setItem('flo',JSON.stringify(FLOWERS));inp.value='';buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();toast('✅ Flower added!');}
+function removeFlower(i){FLOWERS.splice(i,1);localStorage.setItem('flo',JSON.stringify(FLOWERS));buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();}
+
+// Init
+function init(){
+  setToday();
+  buildFlowers('s-flowers','s');
+  buildFlowers('p-flowers','p');
+  buildCusts();
+  buildSetup();
+  setSync('ok');
+}
+init();
+</script>
+</body>
+</html>
