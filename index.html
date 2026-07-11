@@ -814,24 +814,16 @@ function toggleFl(prefix,i) {
 
 function calcTot(prefix) {
   let t = 0;
-  const isPur = prefix === 'p';
+  // Both Buy and Sale tabs: Price field is direct total amount
   FLOWERS.forEach((_, i) => {
     const item = $(`${prefix}_i_${i}`);
     if (item && item.classList.contains('on')) {
-      const price = parseFloat($(`${prefix}_p_${i}`).value) || 0;
-      if (isPur) {
-        // Buy tab: Total = Qty × Price per unit
-        const qty = parseFloat($(`${prefix}_q_${i}`).value) || 0;
-        t += qty * price;
-      } else {
-        // Sale tab: Price field is the total amount directly
-        t += price;
-      }
+      t += parseFloat($(`${prefix}_p_${i}`).value) || 0;
     }
   });
   // Round to avoid floating point issues
   t = Math.round(t * 100) / 100;
-  $(isPur ? 'p-total' : 's-total').textContent = '₹ ' + t.toLocaleString('en-IN');
+  $(prefix === 'p' ? 'p-total' : 's-total').textContent = '₹ ' + t.toLocaleString('en-IN');
 }
 
 // Customer dropdown
