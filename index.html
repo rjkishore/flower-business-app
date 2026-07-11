@@ -289,14 +289,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 <div id="pin-screen" class="pin-screen">
   <img src="icon-192.png" class="pin-logo" onerror="this.style.display='none'">
   <div class="pin-title">ஆறுமுகம் பூ வினியோகம்</div>
-  <div class="pin-sub">உங்கள் பெயரை தேர்வு செய்து PIN உள்ளிடவும்</div>
-
-  <!-- User selection -->
-  <div class="pin-user-btns">
-    <button class="pin-user-btn active" id="ub-kishore" onclick="selectUser('kishore','Kishore')">Kishore</button>
-    <button class="pin-user-btn" id="ub-ammu"    onclick="selectUser('ammu','Ammu')">Ammu</button>
-    <button class="pin-user-btn" id="ub-aru"     onclick="selectUser('aru','Aru')">Aru</button>
-  </div>
+  <div class="pin-sub">உங்கள் PIN உள்ளிடவும்</div>
 
   <!-- PIN dots -->
   <div class="pin-dots">
@@ -1952,22 +1945,9 @@ function isOwner() {
   return USERS[user] && USERS[user].role === 'owner';
 }
 
-let currentUser   = 'kishore';
 let currentPin    = '';
 let pinLocked     = false;
 let pinAttempts   = 0;
-
-function selectUser(userId, name) {
-  currentUser = userId;
-  currentPin  = '';
-  updatePinDots();
-  $('pin-error').textContent = '';
-  // Update button styles
-  Object.keys(USERS).forEach(u => {
-    const btn = $('ub-'+u);
-    if (btn) btn.className = 'pin-user-btn' + (u===userId ? ' active' : '');
-  });
-}
 
 function pinPress(digit) {
   if (pinLocked) return;
@@ -1993,10 +1973,13 @@ function updatePinDots() {
 }
 
 function checkPin() {
-  const user = USERS[currentUser];
-  if (currentPin === user.pin) {
+  // Check PIN against ALL users - no name selection needed
+  const matchedUser = Object.entries(USERS).find(([id, u]) => u.pin === currentPin);
+
+  if (matchedUser) {
+    const [userId, user] = matchedUser;
     // Correct! Save session and show app
-    sessionStorage.setItem('fb_user', currentUser);
+    sessionStorage.setItem('fb_user', userId);
     sessionStorage.setItem('fb_name', user.name);
     sessionStorage.setItem('fb_role', user.role);
     $('pin-screen').style.display = 'none';
@@ -2022,7 +2005,6 @@ function checkPin() {
       }, 30000);
     } else {
       $('pin-error').textContent = `❌ தவறான PIN! மீண்டும் முயற்சிக்கவும் (${5-pinAttempts} வாய்ப்பு மீதம்)`;
-      // Shake animation
       const dots = document.querySelector('.pin-dots');
       dots.style.animation = 'shake 0.3s';
       setTimeout(() => dots.style.animation = '', 300);
