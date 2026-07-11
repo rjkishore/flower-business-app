@@ -767,11 +767,7 @@ let FLOWERS = [
   "முல்லை - Mullai"
 ];
 
-let CUSTOMERS = [
-  "Ramesh Kumar","Priya Lakshmi","Suresh Babu","Anitha Devi","Kiran Reddy",
-  "Meena S","Venkat Rao","Kavitha M","Dinesh J","Saranya R",
-  "Arun Kumar","Bhavani S","Chandran R","Deepa M","Eswaran K"
-];
+let CUSTOMERS = []; // Start empty - add your real customers manually
 
 // Load from Firebase and update
 async function loadFlowersAndCustomers() {
@@ -791,8 +787,8 @@ async function loadFlowersAndCustomers() {
     if (fbCustomers && Array.isArray(fbCustomers)) {
       CUSTOMERS = fbCustomers;
     } else {
-      // First time - save defaults to Firebase
-      await fbPut('config/customers', CUSTOMERS);
+      // First time - save empty list to Firebase
+      await fbPut('config/customers', []);
     }
 
     // Rebuild UI with loaded data
