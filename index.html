@@ -313,6 +313,38 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 
 <!-- ══ SUMMARY ══ -->
 <div class="pg" id="pg-summary">
+
+  <!-- Today Profit Meter -->
+  <div class="profit-bar" id="profit-meter" style="margin-bottom:14px;">
+    <div class="profit-bar-top">
+      <span class="profit-bar-title">📊 Today's Summary</span>
+      <span class="profit-bar-date" id="pm-date"></span>
+    </div>
+    <div class="profit-grid">
+      <div class="profit-item">
+        <div class="val" id="pm-spent">₹0</div>
+        <div class="lbl">🛒 Spent</div>
+      </div>
+      <div class="profit-item">
+        <div class="val" id="pm-billed">₹0</div>
+        <div class="lbl">💰 Billed</div>
+      </div>
+      <div class="profit-item highlight">
+        <div class="val" id="pm-profit">₹0</div>
+        <div class="lbl">✅ Profit</div>
+      </div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Profit margin</span>
+        <span id="pm-margin">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="pm-bar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="ct">📅 Select Month</div>
     <div style="display:flex;gap:8px;">
