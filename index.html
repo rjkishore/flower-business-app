@@ -799,19 +799,33 @@ async function loadFlowersAndCustomers() {
       await fbPut('config/flowers', FLOWERS);
     }
 
-    if (cuArr !== null) {
+    if (cuArr !== null && cuArr !== undefined) {
       CUSTOMERS = cuArr; // Use whatever Firebase has (even empty [])
     } else {
       // First time - save empty list
+      CUSTOMERS = [];
       await fbPut('config/customers', []);
     }
 
-    // Rebuild UI with loaded data
+    console.log('Loaded customers from Firebase:', CUSTOMERS);
+
+    // Rebuild ALL UI with Firebase data
     buildFlowers('s-flowers','s');
     buildFlowers('p-flowers','p');
     buildCusts();
     buildPayCustDropdown();
     buildSetup();
+    
+    // Also rebuild sale customer dropdown and payment dropdown
+    const sCust = $('s-cust');
+    if (sCust) {
+      sCust.innerHTML = '<option value="">-- Select Customer --</option>';
+      CUSTOMERS.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c; o.textContent = c;
+        sCust.appendChild(o);
+      });
+    }
   } catch(e) {
     console.log('Error loading flowers/customers:', e);
   }
@@ -2161,7 +2175,7 @@ function applyRolePermissions() {
   if (actTab) actTab.style.display = owner ? 'flex' : 'none';
 }
 
-function init(){
+async function init(){
   setToday();
   // Set default dates for summary pickers
   const nd=new Date();
