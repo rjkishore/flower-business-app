@@ -2198,11 +2198,9 @@ async function init(){
     $('sum-week-from').value=nfmt(weekStart);
     $('sum-week-to').value=nfmt(nd);
   }
-  buildFlowers('s-flowers','s');
-  buildFlowers('p-flowers','p');
-  buildCusts();
-  buildPayCustDropdown();
-  buildSetup();
+  // Load flowers & customers from Firebase FIRST
+  await loadFlowersAndCustomers();
+
   setSync('ok');
   // Check session (already logged in?)
   checkSession();
