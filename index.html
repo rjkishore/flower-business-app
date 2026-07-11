@@ -771,6 +771,14 @@ let FLOWERS = [
 let CUSTOMERS = []; // Start empty - add your real customers manually
 
 // Load from Firebase and update
+// Firebase returns arrays as objects {0:'a', 1:'b'} - convert back to array
+function fbToArray(data) {
+  if (!data) return null;
+  if (Array.isArray(data)) return data;
+  if (typeof data === 'object') return Object.values(data);
+  return null;
+}
+
 async function loadFlowersAndCustomers() {
   try {
     const [fbFlowers, fbCustomers] = await Promise.all([
@@ -778,19 +786,21 @@ async function loadFlowersAndCustomers() {
       fbGet('config/customers')
     ]);
 
-    // ONLY update if Firebase has data - never overwrite with defaults!
-    if (fbFlowers && Array.isArray(fbFlowers) && fbFlowers.length > 0) {
-      FLOWERS = fbFlowers;
+    // Convert Firebase object back to array
+    const flArr = fbToArray(fbFlowers);
+    const cuArr = fbToArray(fbCustomers);
+
+    if (flArr && flArr.length > 0) {
+      FLOWERS = flArr;
     } else if (!fbFlowers) {
-      // Truly first time - no data in Firebase yet - save defaults
+      // First time - save defaults
       await fbPut('config/flowers', FLOWERS);
     }
-    // If fbFlowers is empty array [] - keep whatever is in FLOWERS (don't overwrite)
 
-    if (fbCustomers && Array.isArray(fbCustomers)) {
-      CUSTOMERS = fbCustomers; // Could be empty [] - that's fine, user cleared it
-    } else if (fbCustomers === null || fbCustomers === undefined) {
-      // Truly first time - save empty list
+    if (cuArr !== null) {
+      CUSTOMERS = cuArr; // Use whatever Firebase has (even empty [])
+    } else {
+      // First time - save empty list
       await fbPut('config/customers', []);
     }
 
@@ -801,7 +811,7 @@ async function loadFlowersAndCustomers() {
     buildPayCustDropdown();
     buildSetup();
   } catch(e) {
-    console.log('Using default flowers/customers:', e);
+    console.log('Error loading flowers/customers:', e);
   }
 }
 
