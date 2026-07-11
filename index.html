@@ -75,6 +75,9 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .fl-ins input{width:100%;padding:10px;border:1.5px solid var(--gl);border-radius:9px;font-size:14px;background:#fff;outline:none}
 .inp-box{flex:1;min-width:80px}
 .unit-toggle{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--gl);background:var(--gp);flex-shrink:0;}
+.fl-hint{font-size:11px;color:var(--teal);font-weight:600;padding:0 14px 6px;display:none;}
+.fl-hint span{background:var(--tl);padding:3px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;}
+.fl-item.on .fl-hint{display:block;}
 .unit-btn{flex:1;padding:9px 10px;border:none;background:transparent;font-size:12px;font-weight:700;color:var(--txl);cursor:pointer;transition:all .2s;white-space:nowrap;}
 .unit-btn.on{background:var(--gm);color:white;}
 .inp-box label{display:block;font-size:10px;color:#666;font-weight:600;margin-bottom:4px}
@@ -475,6 +478,41 @@ function toast(msg,err) {
 }
 
 // Tabs
+// Today's purchase map: flowerName -> {qty, unit}
+let todayPurchases = {};
+
+async function loadTodayPurchases() {
+  try {
+    const today = $('s-date').value;
+    const purs = await fbGet('purchases');
+    todayPurchases = {};
+    if (purs) {
+      Object.values(purs).forEach(p => {
+        if (p.date === today) {
+          const key = p.flower;
+          if (!todayPurchases[key]) todayPurchases[key] = { qty: 0, unit: p.unit || 'kg' };
+          todayPurchases[key].qty += p.qty || 0;
+        }
+      });
+    }
+    // Update hints for all flowers
+    FLOWERS.forEach((fl, i) => {
+      const hintTxt = $(`s_hint_txt_${i}`);
+      if (hintTxt) {
+        if (todayPurchases[fl]) {
+          const p = todayPurchases[fl];
+          hintTxt.textContent = `Today bought: ${p.qty} ${p.unit}`;
+        } else {
+          hintTxt.textContent = 'Not bought today';
+          const hint = $(`s_hint_${i}`);
+          if(hint) hint.querySelector('span').style.background = '#fce4ec';
+          if(hint) hint.querySelector('span').style.color = '#c62828';
+        }
+      }
+    });
+  } catch(e) { console.log('Could not load purchases', e); }
+}
+
 function showTab(t) {
   document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
@@ -482,6 +520,7 @@ function showTab(t) {
   document.querySelector('.scroll-area').scrollTop = 0;
   if(t==='history') loadHistory();
   if(t==='summary') loadSummary();
+  if(t==='sale') loadTodayPurchases();
 }
 
 // Today
@@ -504,6 +543,7 @@ function buildFlowers(cid,prefix) {
         <div class="fl-chk" id="${prefix}_c_${i}"></div>
         <span class="fl-nm">${fl}</span>
       </div>
+      ${!hasPur ? `<div class="fl-hint" id="${prefix}_hint_${i}"><span>🛒 <span id="${prefix}_hint_txt_${i}">Loading...</span></span></div>` : ''}
       <div class="fl-ins" id="${prefix}_in_${i}">
         ${hasPur?`
         <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
@@ -912,6 +952,8 @@ function init(){
   buildCusts();
   buildSetup();
   setSync('ok');
+  // Load today's purchases for hints
+  loadTodayPurchases();
 }
 init();
 </script>
