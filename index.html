@@ -631,26 +631,11 @@ window.installApp = async function() {
 };
 window.closeBanner = () => $('install-banner').style.display = 'none';
 
-// Service worker - auto update on every open
+// No service worker caching - always load fresh from network
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    // Check for update every time app is opened
-    reg.update();
-    // If new version found, reload automatically
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'activated') {
-          // New version installed - reload silently
-          window.location.reload();
-        }
-      });
-    });
-  }).catch(()=>{});
-
-  // Also reload if controller changes (new SW took over)
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
+  // Unregister ALL existing service workers
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
   });
 }
 
