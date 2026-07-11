@@ -1036,6 +1036,8 @@ function showTab(t) {
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
   $('pg-'+t).classList.add('on'); $('tb-'+t).classList.add('on');
   document.querySelector('.scroll-area').scrollTop = 0;
+  // Remember current tab
+  sessionStorage.setItem('active_tab', t);
   if(t==='history') loadHistory();
   if(t==='summary') loadSummary();
   if(t==='sale') loadTodayPurchases();
@@ -2204,6 +2206,10 @@ async function init(){
   setSync('ok');
   // Check session (already logged in?)
   checkSession();
+  // Restore last active tab
+  const lastTab = sessionStorage.getItem('active_tab');
+  if (lastTab && $('tb-'+lastTab)) showTab(lastTab);
+
   // Check festivals
   checkFestivals();
   // Load today profit meter and purchase hints
