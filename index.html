@@ -153,7 +153,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .waste-bad{background:#fce4ec;color:#c62828;}
 .stock-section{margin-top:14px;}
 /* Today profit meter */
-.profit-bar{background:linear-gradient(135deg,#1b5e20,#2e7d32);border-radius:14px;padding:14px 16px;margin:14px 14px 0;box-shadow:0 4px 14px rgba(0,0,0,0.15);}
+.profit-bar{background:linear-gradient(135deg,#1b5e20,#2e7d32);border-radius:14px;padding:14px 16px;margin-bottom:0;box-shadow:0 4px 14px rgba(0,0,0,0.15);}
 .profit-bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
 .profit-bar-title{color:rgba(255,255,255,0.8);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
 .profit-bar-date{color:rgba(255,255,255,0.6);font-size:11px;}
@@ -240,37 +240,6 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 <!-- Scrollable content -->
 <div class="scroll-area" id="scroll-area">
 <div class="ptr" id="ptr-indicator"><span class="ptr-spin"></span>Refreshing...</div>
-
-<!-- Today Profit Meter - shows on all tabs -->
-<div class="profit-bar" id="profit-meter">
-  <div class="profit-bar-top">
-    <span class="profit-bar-title">📊 Today's Summary</span>
-    <span class="profit-bar-date" id="pm-date"></span>
-  </div>
-  <div class="profit-grid">
-    <div class="profit-item">
-      <div class="val" id="pm-spent">₹0</div>
-      <div class="lbl">🛒 Spent</div>
-    </div>
-    <div class="profit-item">
-      <div class="val" id="pm-billed">₹0</div>
-      <div class="lbl">💰 Billed</div>
-    </div>
-    <div class="profit-item highlight">
-      <div class="val" id="pm-profit">₹0</div>
-      <div class="lbl">✅ Profit</div>
-    </div>
-  </div>
-  <div class="progress-wrap">
-    <div class="progress-label">
-      <span>Profit margin</span>
-      <span id="pm-margin">0%</span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill" id="pm-bar" style="width:0%"></div>
-    </div>
-  </div>
-</div>
 
 <!-- ══ SALE ══ -->
 <div class="pg on" id="pg-sale">
