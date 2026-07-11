@@ -660,7 +660,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
   <div class="sb">
     <h3>ℹ️ App Info</h3>
     <p style="font-size:12px;color:var(--txl);">
-      Build: <b id="build-stamp">11-Jul 06:44 UTC</b><br>
+      Build: <b id="build-stamp">11-Jul 06:47 UTC</b><br>
       Service worker: <b id="sw-status">checking…</b>
     </p>
   </div>
@@ -1090,7 +1090,7 @@ function buildFlowers(cid,prefix) {
       ${!hasPur ? `<div class="fl-hint" id="${prefix}_hint_${i}"><span>🛒 <span id="${prefix}_hint_txt_${i}">Loading...</span></span></div>` : ''}
       <div class="fl-ins" id="${prefix}_in_${i}">
         ${hasPur?`
-        <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="recalcRow('${prefix}',${i})"></div>
+        <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
         <div>
           <label style="font-size:10px;color:#666;font-weight:600;display:block;margin-bottom:4px;">Unit</label>
           <div class="unit-toggle">
@@ -1100,8 +1100,7 @@ function buildFlowers(cid,prefix) {
           </div>
           <input type="hidden" id="${prefix}_u_${i}" value="kg">
         </div>
-        <div class="inp-box"><label>₹ Rate <span class="per-unit" id="${prefix}_pu_${i}">/kg</span></label><input type="number" id="${prefix}_r_${i}" placeholder="0" min="0" inputmode="decimal" oninput="recalcRow('${prefix}',${i})"></div>
-        <div class="inp-box"><label>₹ Price</label><input type="number" id="${prefix}_p_${i}" placeholder="0" class="auto-field" readonly tabindex="-1"></div>
+        <div class="inp-box"><label>₹ Price</label><input type="number" id="${prefix}_p_${i}" placeholder="0" min="0" inputmode="numeric" oninput="calcTot('${prefix}')"></div>
         `:`
         <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="recalcRow('${prefix}',${i})"></div>
         <div class="inp-box"><label>₹ Rate</label><input type="number" id="${prefix}_r_${i}" placeholder="0" min="0" inputmode="decimal" oninput="recalcRow('${prefix}',${i})"></div>
@@ -1142,11 +1141,14 @@ function toggleFl(prefix,i) {
 // never an input. This is what stops the "I typed 100 but it shows 99" class
 // of confusion: there is now exactly one place a number can be entered.
 function recalcRow(prefix, i) {
+  const rateEl = $(`${prefix}_r_${i}`);
+  // Buy tab has no Rate box -- Price is typed there, so nothing to derive.
+  if (!rateEl) { calcTot(prefix); return; }
+
   const qty  = parseFloat($(`${prefix}_q_${i}`).value) || 0;
-  const rate = parseFloat($(`${prefix}_r_${i}`).value) || 0;
-  const priceEl = $(`${prefix}_p_${i}`);
+  const rate = parseFloat(rateEl.value) || 0;
   const price = Math.round(qty * rate * 100) / 100;
-  priceEl.value = price > 0 ? price : '';
+  $(`${prefix}_p_${i}`).value = price > 0 ? price : '';
   calcTot(prefix);
 }
 
@@ -1224,12 +1226,11 @@ async function submitPurchase() {
   let purchases=[]; let hasError=false;
   FLOWERS.forEach((fl,i)=>{
     if($(`p_i_${i}`)&&$(`p_i_${i}`).classList.contains('on')&&!hasError){
-      const qty  = parseFloat($(`p_q_${i}`).value) || 0;
-      const unit = ($(`p_u_${i}`) && $(`p_u_${i}`).value) || 'kg';
-      const rate = parseFloat($(`p_r_${i}`).value) || 0;
-      const price= parseFloat($(`p_p_${i}`).value) || 0;
-      if(qty===0||rate===0){toast('Enter qty & rate for: '+fl.split('-')[0],true);hasError=true;return;}
-      purchases.push({name:fl,qty,unit,rate,price,total:price}); // total = qty x rate
+      const qty=parseFloat($(`p_q_${i}`).value)||0;
+      const unit=($(`p_u_${i}`)&&$(`p_u_${i}`).value)||'kg';
+      const price=parseFloat($(`p_p_${i}`).value)||0;
+      if(qty===0||price===0){toast('Enter qty & price for: '+fl.split('-')[0],true);hasError=true;return;}
+      purchases.push({name:fl,qty,unit,price,total:price}); // price IS the total amount
     }
   });
   if(hasError)return;
@@ -1239,7 +1240,7 @@ async function submitPurchase() {
   setSync('saving');
   try {
     for(const p of purchases)
-      await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,rate:p.rate,buyPrice:p.rate,totalCost:p.total,ts:Date.now()});
+      await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,buyPrice:p.price,totalCost:p.total,ts:Date.now()});
     setSync('ok'); toast('✅ Purchase saved!'); resetPurchase(); loadTodayProfit(); loadTodayPurchases();
   } catch(e){setSync('err');toast('Error! Check internet.',true);}
   btn.disabled=false; btn.innerHTML='✅ Add Purchase';
@@ -1446,7 +1447,7 @@ function resetSale(){
   $('s-coll').value='';$('s-notes').value='';$('s-total').textContent='₹ 0';$('s-cust').value='';setToday();
 }
 function resetPurchase(){
-  FLOWERS.forEach((_,i)=>{const item=$(`p_i_${i}`);if(item){item.classList.remove('on');$(`p_c_${i}`).textContent='';$(`p_q_${i}`).value='';$(`p_r_${i}`).value='';if($(`p_u_${i}`))setUnit('p',i,'kg');$(`p_p_${i}`).value='';}});
+  FLOWERS.forEach((_,i)=>{const item=$(`p_i_${i}`);if(item){item.classList.remove('on');$(`p_c_${i}`).textContent='';$(`p_q_${i}`).value='';if($(`p_u_${i}`))setUnit('p',i,'kg');$(`p_p_${i}`).value='';}});
   $('p-total').textContent='₹ 0';setToday();
 }
 
@@ -2256,14 +2257,17 @@ function captureEntry(prefix) {
   FLOWERS.forEach((fl, i) => {
     const item = $(`${prefix}_i_${i}`);
     if (!item) return;
-    const q = $(`${prefix}_q_${i}`), r = $(`${prefix}_r_${i}`), u = $(`${prefix}_u_${i}`);
+    const q = $(`${prefix}_q_${i}`), r = $(`${prefix}_r_${i}`),
+          p = $(`${prefix}_p_${i}`), u = $(`${prefix}_u_${i}`);
     const on = item.classList.contains('on');
-    if (on || (q && q.value) || (r && r.value)) {
+    // Sale rows have Rate (Price derived); Buy rows have Price typed directly.
+    if (on || (q && q.value) || (r && r.value) || (p && p.value)) {
       state[fl] = {
         on,
-        qty:  q ? q.value : '',
-        rate: r ? r.value : '',
-        unit: u ? u.value : 'kg'
+        qty:   q ? q.value : '',
+        rate:  r ? r.value : '',
+        price: p ? p.value : '',
+        unit:  u ? u.value : 'kg'
       };
     }
   });
@@ -2281,11 +2285,12 @@ function restoreEntry(prefix, state) {
       const chk = $(`${prefix}_c_${i}`);
       if (chk) chk.textContent = '✓';
     }
-    const q = $(`${prefix}_q_${i}`), r = $(`${prefix}_r_${i}`), u = $(`${prefix}_u_${i}`);
+    const q = $(`${prefix}_q_${i}`), r = $(`${prefix}_r_${i}`),
+          p = $(`${prefix}_p_${i}`), u = $(`${prefix}_u_${i}`);
     if (q) q.value = s.qty;
-    if (r) r.value = s.rate;
     if (u && s.unit) setUnit(prefix, i, s.unit);
-    recalcRow(prefix, i);          // Price is derived -- recompute it
+    if (r) { r.value = s.rate; recalcRow(prefix, i); }   // sale: derive Price
+    else if (p) { p.value = s.price; }                   // buy: Price was typed
   });
   calcTot(prefix);
 }
