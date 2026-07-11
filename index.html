@@ -909,13 +909,18 @@ async function loadHistory() {
     if(sales){
       const grouped={};
       Object.entries(sales).forEach(([key,s])=>{
-        if(s.totalBilled>0){
-          const gKey=s.groupTs||s.ts;
-          if(!grouped[gKey]) grouped[gKey]={...s,flowers:[s.flower],_fbKey:key,_allKeys:[key]};
-          else { grouped[gKey].flowers.push(s.flower); grouped[gKey]._allKeys.push(key); }
+        const gKey=s.groupTs||s.ts;
+        if(!grouped[gKey]) {
+          // First row of group - use its totalBilled (only first row has correct total)
+          grouped[gKey]={...s, flowers:[s.flower], _fbKey:key, _allKeys:[key]};
+        } else {
+          // Extra flower rows - just add flower name, DON'T add to totalBilled
+          grouped[gKey].flowers.push(s.flower);
+          grouped[gKey]._allKeys.push(key);
         }
       });
-      Object.values(grouped).forEach(g=>items.push({...g,_type:'sale'}));
+      // Only show groups that have a valid totalBilled
+      Object.values(grouped).filter(g=>g.totalBilled>0||g.price>0).forEach(g=>items.push({...g,_type:'sale'}));
     }
     if(purs) Object.entries(purs).forEach(([key,p])=>items.push({...p,_type:'pur',_fbKey:key}));
     items.sort((a,b)=>b.ts-a.ts);
@@ -923,13 +928,15 @@ async function loadHistory() {
     el.innerHTML=items.slice(0,50).map(item=>{
       if(item._type==='sale'){
         const fls=[...new Set(item.flowers||[item.flower])].map(f=>f.split('-')[0].trim()).join(', ');
+        const billed = item.totalBilled || item.price || 0;
+        const bal    = item.balance !== undefined ? item.balance : billed - (item.collected||0);
         return `<div class="hi">
           <div class="hi-date">${item.date} · ${item.payMode||'Daily'}</div>
           <div class="hi-name">${item.customer}</div>
           <div class="hi-fls">🌸 ${fls}</div>
           <div class="hi-amts">
-            <span class="pill p-b">Billed ₹${item.totalBilled}</span>
-            <span class="pill ${item.balance>0?'p-d':'p-p'}">${item.balance>0?'Due ₹'+item.balance:'✓ Paid'}</span>
+            <span class="pill p-b">Billed ₹${billed}</span>
+            <span class="pill ${bal>0?'p-d':'p-p'}">${bal>0?'Due ₹'+bal:'✓ Paid'}</span>
           </div>
           <div class="hi-actions">
             <button class="btn-edit" onclick="openEdit('${item._fbKey}','sale')">✏️ Edit</button>
