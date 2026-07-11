@@ -788,36 +788,45 @@ async function loadFlowersAndCustomers() {
       fbGet('config/customers')
     ]);
 
-    // Convert Firebase data to array safely
-    // Firebase can return: null, [], ["a","b"], or {"0":"a","1":"b"}
-    function toArr(data) {
+    // Firebase stores arrays as objects: {0:"a", 1:"b"}
+    // This function handles ALL cases
+    function firebaseToArray(data) {
       if (data === null || data === undefined) return null;
-      if (Array.isArray(data)) return data.filter(x => x); // remove nulls
-      if (typeof data === 'object') return Object.values(data).filter(x => x);
+      // Already a proper array
+      if (Array.isArray(data)) return data.filter(Boolean);
+      // Firebase object with numeric keys {0:"a", 1:"b"}
+      if (typeof data === 'object') {
+        const keys = Object.keys(data).sort((a,b) => Number(a)-Number(b));
+        return keys.map(k => data[k]).filter(Boolean);
+      }
       return null;
     }
 
-    const flArr = toArr(fbFlowers);
-    const cuArr = toArr(fbCustomers);
+    const flArr = firebaseToArray(fbFlowers);
+    const cuArr = firebaseToArray(fbCustomers);
 
+    // Update FLOWERS
     if (flArr && flArr.length > 0) {
       FLOWERS = flArr;
     } else if (fbFlowers === null) {
+      // Save defaults first time
       await fbPut('config/flowers', FLOWERS);
     }
 
+    // Update CUSTOMERS
     if (cuArr !== null) {
-      CUSTOMERS = cuArr;
+      CUSTOMERS = cuArr; // even if empty []
     } else if (fbCustomers === null) {
       await fbPut('config/customers', []);
     }
 
-    // Rebuild ALL UI
+    // Rebuild ALL UI with correct data
     buildFlowers('s-flowers','s');
     buildFlowers('p-flowers','p');
     buildCusts();
     buildPayCustDropdown();
     buildSetup();
+
   } catch(e) {
     console.log('Error loading flowers/customers:', e);
   }
@@ -1435,12 +1444,22 @@ async function debugFirebase(){
   out.textContent = 'Loading...';
   try {
     const raw = await fbGet('config/customers');
-    const arr = fbToArray(raw);
+    // Test conversion
+    let converted = null;
+    if (raw !== null && raw !== undefined) {
+      if (Array.isArray(raw)) converted = raw.filter(Boolean);
+      else if (typeof raw === 'object') {
+        const keys = Object.keys(raw).sort((a,b)=>Number(a)-Number(b));
+        converted = keys.map(k=>raw[k]).filter(Boolean);
+      }
+    }
     out.innerHTML = `
-      <b>Raw Firebase:</b> ${JSON.stringify(raw)}<br>
-      <b>Converted:</b> ${JSON.stringify(arr)}<br>
-      <b>Current CUSTOMERS:</b> ${JSON.stringify(CUSTOMERS)}<br>
-      <b>Type:</b> ${typeof raw} | isArray: ${Array.isArray(raw)}
+      <b>Raw:</b> ${JSON.stringify(raw)}<br>
+      <b>Type:</b> ${typeof raw}<br>
+      <b>isArray:</b> ${Array.isArray(raw)}<br>
+      <b>Keys:</b> ${raw ? JSON.stringify(Object.keys(raw)) : 'none'}<br>
+      <b>Converted:</b> ${JSON.stringify(converted)}<br>
+      <b>CUSTOMERS now:</b> ${JSON.stringify(CUSTOMERS)}
     `;
   } catch(e) {
     out.textContent = 'Error: ' + e.message;
