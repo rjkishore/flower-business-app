@@ -1,23 +1,33 @@
-const CACHE = 'flower-app-v8';
-const FILES = ['./index.html', './manifest.json'];
+// Service Worker - Always fetch fresh from network
+const CACHE = 'flower-app-v9';
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
-  self.skipWaiting();
+  self.skipWaiting(); // Activate immediately
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
+  // Delete ALL old caches
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', e => {
-  // Network first for Firebase, cache first for app files
-  if (e.request.url.includes('firebaseio.com') || e.request.url.includes('gstatic.com')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
-  } else {
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  // Firebase calls - always network
+  if (e.request.url.includes('firebaseio.com') || 
+      e.request.url.includes('gstatic.com')) {
+    e.respondWith(fetch(e.request));
+    return;
   }
+
+  // App files - Network first, NO caching
+  // This means every refresh gets the latest version
+  e.respondWith(
+    fetch(e.request).catch(() => {
+      // Only use cache if completely offline
+      return caches.match(e.request);
+    })
+  );
 });
