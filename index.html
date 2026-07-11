@@ -777,17 +777,19 @@ async function loadFlowersAndCustomers() {
       fbGet('config/customers')
     ]);
 
-    if (fbFlowers && Array.isArray(fbFlowers)) {
+    // ONLY update if Firebase has data - never overwrite with defaults!
+    if (fbFlowers && Array.isArray(fbFlowers) && fbFlowers.length > 0) {
       FLOWERS = fbFlowers;
-    } else {
-      // First time - save defaults to Firebase
+    } else if (!fbFlowers) {
+      // Truly first time - no data in Firebase yet - save defaults
       await fbPut('config/flowers', FLOWERS);
     }
+    // If fbFlowers is empty array [] - keep whatever is in FLOWERS (don't overwrite)
 
     if (fbCustomers && Array.isArray(fbCustomers)) {
-      CUSTOMERS = fbCustomers;
-    } else {
-      // First time - save empty list to Firebase
+      CUSTOMERS = fbCustomers; // Could be empty [] - that's fine, user cleared it
+    } else if (fbCustomers === null || fbCustomers === undefined) {
+      // Truly first time - save empty list
       await fbPut('config/customers', []);
     }
 
