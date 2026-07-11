@@ -278,7 +278,11 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
     <div class="ct">📅 Date & Customer</div>
     <div class="fld"><label>Date</label><input type="date" id="s-date"></div>
     <div class="fld"><label>Customer Name</label>
-      <div class="sw"><select id="s-cust"><option value="">-- Select Customer --</option></select></div>
+      <div style="display:flex;gap:8px;">
+        <div class="sw" style="flex:1"><select id="s-cust"><option value="">-- Select Customer --</option></select></div>
+        <button onclick="quickAddCustomer()" 
+          style="padding:11px 14px;background:var(--gm);color:white;border:none;border-radius:10px;font-size:18px;cursor:pointer;flex-shrink:0;">+</button>
+      </div>
     </div>
   </div>
   <div class="card">
@@ -314,6 +318,21 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
     <div class="ct">🌸 Tick flowers bought at market today</div>
     <div class="fl-list" id="p-flowers"></div>
     <div class="tot"><span class="tot-l">Total Spent at Market</span><span class="tot-v" id="p-total">₹ 0</span></div>
+  </div>
+  <!-- Transport cost card -->
+  <div class="card">
+    <div class="ct">🚗 Transport / Travel Cost</div>
+    <div style="display:flex;gap:10px;align-items:flex-end;">
+      <div class="fld" style="flex:1;margin-bottom:0;">
+        <label>Amount Spent (₹)</label>
+        <input type="number" id="transport-amt" placeholder="e.g. 50" min="0" inputmode="numeric">
+      </div>
+      <div class="fld" style="flex:1;margin-bottom:0;">
+        <label>Notes</label>
+        <input type="text" id="transport-note" placeholder="Auto, bus...">
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--txl);margin-top:6px;">ℹ️ This will be deducted from today's profit</p>
   </div>
   <button class="btn-s" id="btn-pur" onclick="submitPurchase()">✅ Add Purchase</button>
 </div>
@@ -446,6 +465,21 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 
 </div><!-- end scroll-area -->
 <div class="toast" id="toast"></div>
+
+<!-- Quick Add Customer Modal -->
+<div class="modal-overlay" id="quick-cust-modal" onclick="closeQuickCust(event)">
+  <div class="modal-box">
+    <div class="modal-title">➕ Add New Customer</div>
+    <div class="modal-field">
+      <label>Customer Name</label>
+      <input type="text" id="quick-cust-name" placeholder="Enter customer name...">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="$('quick-cust-modal').classList.remove('show')">Cancel</button>
+      <button class="modal-save" onclick="saveQuickCustomer()">✅ Add Customer</button>
+    </div>
+  </div>
+</div>
 
 <!-- Edit Modal -->
 <div class="modal-overlay" id="edit-modal" onclick="closeModal(event)">
@@ -616,7 +650,7 @@ async function loadTodayProfit() {
     // Date display
     $('pm-date').textContent = today.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
 
-    const [sales, purs] = await Promise.all([fbGet('sales'), fbGet('purchases')]);
+    const [sales, purs, expenses] = await Promise.all([fbGet('sales'), fbGet('purchases'), fbGet('expenses')]);
 
     let totalSpent  = 0;
     let totalBilled = 0;
@@ -626,7 +660,11 @@ async function loadTodayProfit() {
         .filter(p => p.date === todayStr)
         .forEach(p => totalSpent += p.totalCost || 0);
     }
-
+    if (expenses) {
+      Object.values(expenses)
+        .filter(e => e.date === todayStr)
+        .forEach(e => totalSpent += e.amount || 0);
+    }
     if (sales) {
       Object.values(sales)
         .filter(s => s.date === todayStr && s.totalBilled > 0)
@@ -1156,6 +1194,32 @@ async function loadPaymentHistory() {
         <div class="pay-amount">+₹${p.amount}</div>
       </div>`).join('');
   } catch(e) { el.innerHTML = '<p style="color:red;font-size:12px;padding:10px">Error loading</p>'; }
+}
+
+// ── Quick Add Customer ────────────────────────────────
+function quickAddCustomer() {
+  $('quick-cust-name').value = '';
+  $('quick-cust-modal').classList.add('show');
+  setTimeout(() => $('quick-cust-name').focus(), 300);
+}
+
+function closeQuickCust(e) {
+  if(e.target.id==='quick-cust-modal') $('quick-cust-modal').classList.remove('show');
+}
+
+function saveQuickCustomer() {
+  const name = $('quick-cust-name').value.trim();
+  if(!name) { toast('Please enter customer name!', true); return; }
+  if(CUSTOMERS.includes(name)) { toast('Customer already exists!', true); return; }
+  CUSTOMERS.push(name);
+  localStorage.setItem('cus', JSON.stringify(CUSTOMERS));
+  buildCusts();
+  buildPayCustDropdown();
+  buildSetup();
+  // Auto select the new customer
+  $('s-cust').value = name;
+  $('quick-cust-modal').classList.remove('show');
+  toast('✅ ' + name + ' added!');
 }
 
 // ── Edit & Delete ─────────────────────────────────────
