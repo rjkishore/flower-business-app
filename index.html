@@ -596,9 +596,27 @@ window.installApp = async function() {
 };
 window.closeBanner = () => $('install-banner').style.display = 'none';
 
-// Service worker
+// Service worker - auto update on every open
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    // Check for update every time app is opened
+    reg.update();
+    // If new version found, reload automatically
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'activated') {
+          // New version installed - reload silently
+          window.location.reload();
+        }
+      });
+    });
+  }).catch(()=>{});
+
+  // Also reload if controller changes (new SW took over)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
 }
 
 // Firebase REST
