@@ -927,7 +927,7 @@ async function submitPurchase() {
       const unit=($(`p_u_${i}`)&&$(`p_u_${i}`).value)||'bunch';
       const price=parseFloat($(`p_p_${i}`).value)||0;
       if(qty===0||price===0){toast('Enter qty & price for: '+fl.split('-')[0],true);hasError=true;return;}
-      purchases.push({name:fl,qty,unit,price,total:Math.round(qty*price*100)/100});
+      purchases.push({name:fl,qty,unit,price,total:price}); // price IS the total amount
     }
   });
   if(hasError)return;
@@ -1348,7 +1348,7 @@ async function saveEdit() {
       updateData = {
         date, flower: $('edit-pur-flower').value,
         qty, unit: $('edit-pur-unit').value || 'bunch',
-        buyPrice: price, totalCost: qty * price
+        buyPrice: price, totalCost: price // price is total, not per unit
       };
       await fbPut(`purchases/${fbKey}`, updateData);
     }
