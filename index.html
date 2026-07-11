@@ -1683,12 +1683,12 @@ function closeQuickCust(e) {
   if(e.target.id==='quick-cust-modal') $('quick-cust-modal').classList.remove('show');
 }
 
-function saveQuickCustomer() {
+async function saveQuickCustomer() {
   const name = $('quick-cust-name').value.trim();
   if(!name) { toast('Please enter customer name!', true); return; }
   if(CUSTOMERS.includes(name)) { toast('Customer already exists!', true); return; }
   CUSTOMERS.push(name);
-  localStorage.setItem('cus', JSON.stringify(CUSTOMERS));
+  await fbPut('config/customers', CUSTOMERS);
   buildCusts();
   buildPayCustDropdown();
   buildSetup();
