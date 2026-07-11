@@ -74,6 +74,9 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .fl-item.on .fl-ins{display:flex}
 .fl-ins input{width:100%;padding:10px;border:1.5px solid var(--gl);border-radius:9px;font-size:14px;background:#fff;outline:none}
 .inp-box{flex:1;min-width:80px}
+.unit-toggle{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--gl);background:var(--gp);flex-shrink:0;}
+.unit-btn{flex:1;padding:9px 10px;border:none;background:transparent;font-size:12px;font-weight:700;color:var(--txl);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.unit-btn.on{background:var(--gm);color:white;}
 .inp-box label{display:block;font-size:10px;color:#666;font-weight:600;margin-bottom:4px}
 .fl-ins input:focus{border-color:var(--gm)}
 .fl-ins label{font-size:10px;color:var(--txl);font-weight:600;white-space:nowrap}
@@ -504,7 +507,15 @@ function buildFlowers(cid,prefix) {
       <div class="fl-ins" id="${prefix}_in_${i}">
         ${hasPur?`
         <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
-        <div class="inp-box"><label>Unit</label><input type="text" id="${prefix}_u_${i}" placeholder="kg/bunch"></div>
+        <div>
+          <label style="font-size:10px;color:#666;font-weight:600;display:block;margin-bottom:4px;">Unit</label>
+          <div class="unit-toggle">
+            <button class="unit-btn on" id="${prefix}_u_${i}_kg"   onclick="setUnit('${prefix}',${i},'kg')">kg</button>
+            <button class="unit-btn"    id="${prefix}_u_${i}_bch"  onclick="setUnit('${prefix}',${i},'bunch')">bunch</button>
+            <button class="unit-btn"    id="${prefix}_u_${i}_pcs"  onclick="setUnit('${prefix}',${i},'piece')">piece</button>
+          </div>
+          <input type="hidden" id="${prefix}_u_${i}" value="kg">
+        </div>
         <div class="inp-box"><label>₹ Price</label><input type="number" id="${prefix}_p_${i}" placeholder="0" min="0" inputmode="numeric" oninput="calcTot('${prefix}')"></div>
         `:`
         <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
@@ -515,11 +526,26 @@ function buildFlowers(cid,prefix) {
   });
 }
 
+function setUnit(prefix, i, unit) {
+  // Update hidden input
+  $(`${prefix}_u_${i}`).value = unit;
+  // Update toggle buttons
+  $(`${prefix}_u_${i}_kg`).className  = 'unit-btn' + (unit==='kg'    ? ' on' : '');
+  $(`${prefix}_u_${i}_bch`).className = 'unit-btn' + (unit==='bunch' ? ' on' : '');
+  $(`${prefix}_u_${i}_pcs`).className = 'unit-btn' + (unit==='piece' ? ' on' : '');
+}
+
 function toggleFl(prefix,i) {
   const item=$(`${prefix}_i_${i}`),chk=$(`${prefix}_c_${i}`);
   const on=item.classList.toggle('on');
   chk.textContent=on?'✓':'';
-  if(!on){const p=$(`${prefix}_p_${i}`),q=$(`${prefix}_q_${i}`);if(p)p.value='';if(q)q.value='';}
+  if(!on){
+    const p=$(`${prefix}_p_${i}`),q=$(`${prefix}_q_${i}`);
+    if(p)p.value=''; if(q)q.value='';
+    // Reset unit toggle to kg
+    const uEl=$(`${prefix}_u_${i}`);
+    if(uEl){uEl.value='kg';setUnit(prefix,i,'kg');}
+  }
   calcTot(prefix);
 }
 
