@@ -147,9 +147,15 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 <!-- Header -->
 <div class="hdr">
   <div class="hdr-top">
-    <div>
-      <h1>🌸 ஆறுமுகம் பூ வினியோகம்</h1>
-      <p>பூ வினியோக நிறுவனம் – Daily Tracker</p>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="icon-192.png" alt="ஆறுமுகம்" 
+           style="width:52px;height:52px;border-radius:12px;object-fit:cover;
+                  box-shadow:0 2px 10px rgba(0,0,0,0.4);flex-shrink:0;"
+           onerror="this.style.display='none'">
+      <div>
+        <h1 style="font-size:16px;line-height:1.2;">ஆறுமுகம் பூ வினியோகம்</h1>
+        <p style="font-size:10px;opacity:0.8;">பூ வினியோக நிறுவனம் · Daily Tracker</p>
+      </div>
     </div>
     <span class="sync" id="sync"></span>
   </div>
