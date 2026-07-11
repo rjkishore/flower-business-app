@@ -626,6 +626,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
       <input type="text" id="new-cust" placeholder="Add new customer name...">
       <button class="btn-add" onclick="addCustomer()">Add</button>
     </div>
+    <button onclick="clearAllCustomers()" style="width:100%;margin-top:10px;padding:10px;background:none;border:1.5px solid var(--red);color:var(--red);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">🗑️ Clear All Customers</button>
   </div>
   <div class="sb">
     <h3>🌸 Flowers</h3>
@@ -1410,6 +1411,16 @@ async function addFlower(){
   inp.value='';buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();
   toast('✅ Flower added!');
 }
+async function clearAllCustomers(){
+  if(!confirm('Delete ALL customers? This cannot be undone!'))return;
+  CUSTOMERS = [];
+  await fbPut('config/customers', []);
+  buildCusts();
+  buildPayCustDropdown();
+  buildSetup();
+  toast('✅ All customers cleared!');
+}
+
 async function resetFlowers(){
   if(!confirm('Reset to default 5 flowers? This will remove all current flowers!'))return;
   FLOWERS = [
