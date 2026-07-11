@@ -600,8 +600,8 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 <!-- ══ ACTIVITY LOG ══ -->
 <div class="pg" id="pg-activity">
   <div class="card">
-    <div class="ct">📜 Activity Log — Who Did What</div>
-    <p style="font-size:12px;color:var(--txl);margin-bottom:10px;">இந்த tab-ல் யார் என்ன சேர்த்தார்கள், திருத்தினார்கள் என்பதை காணலாம்.</p>
+    <div class="ct">📜 Payment Edit / Delete Log</div>
+    <p style="font-size:12px;color:var(--txl);margin-bottom:10px;">💳 Payment-ஐ யார் திருத்தினார்கள் அல்லது நீக்கினார்கள் என்பதை இங்கே காணலாம்.</p>
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <button class="mb on" id="log-all"  onclick="filterLog('all')" style="flex:1;padding:9px;border:2px solid var(--gl);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">அனைத்தும்</button>
       <button class="mb" id="log-aru"     onclick="filterLog('Aru')" style="flex:1;padding:9px;border:2px solid var(--gl);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">Aru மட்டும்</button>
@@ -1138,7 +1138,7 @@ async function submitPurchase() {
   setSync('saving');
   try {
     for(const p of purchases)
-      await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,buyPrice:p.price,totalCost:p.total,ts:Date.now(),addedBy:sessionStorage.getItem('fb_name')||'Unknown'});
+      await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,buyPrice:p.price,totalCost:p.total,ts:Date.now()});
     setSync('ok'); toast('✅ Purchase saved!'); resetPurchase(); loadTodayProfit(); loadTodayPurchases();
   } catch(e){setSync('err');toast('Error! Check internet.',true);}
   btn.disabled=false; btn.innerHTML='✅ Add Purchase';
@@ -1431,8 +1431,7 @@ async function submitPayment() {
     await fbPost('payments', {
       customer, date, amount,
       method: payMethod,
-      notes, ts: Date.now(),
-      addedBy: sessionStorage.getItem('fb_name')||'Unknown'
+      notes, ts: Date.now()
     });
     toast('✅ Payment recorded!');
     // Reset form
@@ -1569,37 +1568,12 @@ async function loadActivityLog() {
   if (!el) return;
   el.innerHTML = '<p style="font-size:13px;color:#999;text-align:center;padding:20px;">Loading...</p>';
   try {
-    const [sales, purs, payments, expenses] = await Promise.all([
-      fbGet('sales'), fbGet('purchases'), fbGet('payments'), fbGet('expenses')
-    ]);
-
-    let logs = [];
-
-    if (sales) Object.entries(sales).forEach(([k,s]) => {
-      if (s.addedBy) logs.push({
-        type:'sale', user:s.addedBy, ts:s.ts||0,
-        action:`${s.customer} க்கு ${s.flower?.split('-')[0]?.trim()||''} விற்பனை`,
-        amount: s.price||0, key:k
-      });
-    });
-
-    if (purs) Object.entries(purs).forEach(([k,p]) => {
-      if (p.addedBy) logs.push({
-        type:'buy', user:p.addedBy, ts:p.ts||0,
-        action:`${p.flower?.split('-')[0]?.trim()||''} வாங்கியது`,
-        amount: p.totalCost||0, key:k
-      });
-    });
-
-    if (payments) Object.entries(payments).forEach(([k,p]) => {
-      if (p.addedBy) logs.push({
-        type:'pay', user:p.addedBy, ts:p.ts||0,
-        action:`${p.customer} ₹${p.amount} செலுத்தினார்`,
-        amount: p.amount||0, key:k
-      });
-    });
-
-    logs.sort((a,b) => b.ts - a.ts);
+    const logs_raw = await fbGet('activity_log');
+    if (!logs_raw) {
+      el.innerHTML = '<div class="empty"><div class="ei">📜</div><p>இன்னும் எந்த திருத்தமும் / நீக்கமும் இல்லை</p></div>';
+      return;
+    }
+    const logs = Object.values(logs_raw).sort((a,b) => b.ts - a.ts);
     window._activityData = logs;
     renderActivityLog(logs);
   } catch(e) {
@@ -1611,27 +1585,36 @@ function renderActivityLog(logs) {
   const el = $('activity-list');
   if (!el) return;
 
-  const filtered = logFilter === 'all' ? logs : logs.filter(l => l.user === logFilter);
+  const filtered = logFilter === 'all' ? logs : logs.filter(l => (l.by||'').toLowerCase().includes(logFilter.toLowerCase()));
 
   if (filtered.length === 0) {
-    el.innerHTML = '<p style="font-size:13px;color:#999;text-align:center;padding:20px;">No activity found!</p>';
+    el.innerHTML = '<div class="empty"><div class="ei">📜</div><p>இந்த வகை திருத்தம் / நீக்கம் இல்லை</p></div>';
     return;
   }
 
-  const typeLabels = { sale:'விற்பனை', buy:'வாங்கியது', pay:'பணம்', edit:'திருத்தம்', del:'நீக்கம்' };
-  const typeBadges = { sale:'badge-sale', buy:'badge-buy', pay:'badge-pay', edit:'badge-edit', del:'badge-del' };
-
   el.innerHTML = filtered.slice(0, 50).map(log => {
     const d = new Date(log.ts);
-    const timeStr = log.ts ? d.toLocaleDateString('en-IN') + ' ' + d.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '';
-    const userLower = (log.user||'').toLowerCase();
-    const avClass = userLower.includes('aru') ? 'log-av-aru' : userLower.includes('ammu') ? 'log-av-ammu' : 'log-av-kishore';
-    const initial = (log.user||'?')[0].toUpperCase();
+    const timeStr = log.ts ? d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '';
+    const byLower  = (log.by||'').toLowerCase();
+    const avClass  = byLower.includes('aru') ? 'log-av-aru' : byLower.includes('ammu') ? 'log-av-ammu' : 'log-av-kishore';
+    const initial  = (log.by||'?')[0].toUpperCase();
+    const isEdit   = log.action === 'edit';
+    const badgeCls = isEdit ? 'badge-edit' : 'badge-del';
+    const badgeTxt = isEdit ? '✏️ திருத்தம்' : '🗑️ நீக்கம்';
+
+    let detail = '';
+    if (isEdit) {
+      detail = `${log.customer} — ₹${log.oldAmount} → ₹${log.newAmount}`;
+      if (log.oldDate !== log.newDate) detail += ` | ${log.oldDate} → ${log.newDate}`;
+    } else {
+      detail = `${log.customer} — ₹${log.amount} (${log.date})`;
+    }
+
     return `<div class="log-item">
       <div class="log-avatar ${avClass}">${initial}</div>
       <div class="log-content">
-        <div class="log-name">${log.user||'Unknown'} <span class="log-badge ${typeBadges[log.type]||'badge-sale'}">${typeLabels[log.type]||log.type}</span></div>
-        <div class="log-action">${log.action}</div>
+        <div class="log-name">${log.by||'Unknown'} <span class="log-badge ${badgeCls}">${badgeTxt}</span></div>
+        <div class="log-action">💳 Payment: ${detail}</div>
         <div class="log-time">${timeStr}</div>
       </div>
     </div>`;
@@ -1689,7 +1672,19 @@ async function editPayment(key) {
 async function deletePayment(key) {
   if (confirm('Delete this payment? Cannot be undone!')) {
     try {
+      const deletedBy = sessionStorage.getItem('fb_name') || 'Unknown';
+      const data = await fbGet(`payments/${key}`);
       await fbDelete(`payments/${key}`);
+      // Log this deletion
+      await fbPost('activity_log', {
+        action:   'delete',
+        by:        deletedBy,
+        target:   'payment',
+        customer: data?.customer || '',
+        amount:   data?.amount   || 0,
+        date:     data?.date     || '',
+        ts:       Date.now()
+      });
       toast('🗑️ Payment deleted!');
       loadOutstanding();
       loadPaymentHistory();
@@ -1753,12 +1748,26 @@ async function saveEdit() {
   if (type === 'payment') {
     try {
       const amt = parseFloat($('edit-pay-amt').value)||0;
+      const editedBy = sessionStorage.getItem('fb_name') || 'Unknown';
+      const oldData  = await fbGet(`payments/${fbKey}`);
       await fbPut(`payments/${fbKey}`, {
         customer: $('edit-pay-cust').value,
         date, amount: amt,
         method: $('edit-pay-method').value,
         notes: $('edit-pay-notes').value,
         ts: Date.now()
+      });
+      // Log this edit to activity_log
+      await fbPost('activity_log', {
+        action:    'edit',
+        by:         editedBy,
+        target:    'payment',
+        customer:  oldData?.customer || '',
+        oldAmount: oldData?.amount   || 0,
+        newAmount: amt,
+        oldDate:   oldData?.date     || '',
+        newDate:   date,
+        ts:        Date.now()
       });
       $('edit-modal').classList.remove('show');
       toast('✅ Payment updated!');
