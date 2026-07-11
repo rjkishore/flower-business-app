@@ -81,6 +81,12 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .fl-hint{font-size:11px;color:var(--teal);font-weight:600;padding:0 14px 6px;display:none;}
 .fl-hint span{background:var(--tl);padding:3px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;}
 .fl-item.on .fl-hint{display:block;}
+.fl-margin{padding:0 14px 6px;display:none;}
+.fl-item.on .fl-margin{display:block;}
+.fl-margin span{font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px;display:inline-block;}
+.m-ok{background:#e8f5e9;color:#2e7d32;}
+.m-flat{background:#fff8e1;color:#8d6e00;}
+.m-bad{background:#fce4ec;color:#c62828;}
 .unit-btn{flex:1;padding:9px 10px;border:none;background:transparent;font-size:12px;font-weight:700;color:var(--txl);cursor:pointer;transition:all .2s;white-space:nowrap;}
 .unit-btn.on{background:var(--gm);color:white;}
 .inp-box label{display:block;font-size:10px;color:#666;font-weight:600;margin-bottom:4px}
@@ -660,7 +666,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
   <div class="sb">
     <h3>ℹ️ App Info</h3>
     <p style="font-size:12px;color:var(--txl);">
-      Build: <b id="build-stamp">11-Jul 06:47 UTC</b><br>
+      Build: <b id="build-stamp">11-Jul 06:54 UTC</b><br>
       Service worker: <b id="sw-status">checking…</b>
     </p>
   </div>
@@ -987,10 +993,12 @@ async function loadTodayPurchases() {
       Object.values(purs).forEach(p => {
         if (p.date === today) {
           if (!todayPurchases[p.flower])
-            todayPurchases[p.flower] = { bought: 0, sold: 0, unit: p.unit || 'kg', buyPrice: p.buyPrice || 0 };
-          todayPurchases[p.flower].bought   += p.qty      || 0;
-          todayPurchases[p.flower].buyPrice  = p.buyPrice || 0;
-          todayPurchases[p.flower].unit      = p.unit     || 'kg';
+            todayPurchases[p.flower] = { bought: 0, sold: 0, spent: 0, unit: p.unit || 'kg' };
+          // On the Buy tab, Price is the TOTAL paid -- not a rate. So the
+          // per-unit buy rate has to be derived: total paid / total bought.
+          todayPurchases[p.flower].bought += p.qty       || 0;
+          todayPurchases[p.flower].spent  += p.totalCost || 0;
+          todayPurchases[p.flower].unit    = p.unit      || 'kg';
         }
       });
     }
@@ -1000,11 +1008,16 @@ async function loadTodayPurchases() {
       Object.values(sales).forEach(s => {
         if (s.date === today && s.flower && s.qty > 0) {
           if (!todayPurchases[s.flower])
-            todayPurchases[s.flower] = { bought: 0, sold: 0, unit: 'kg', buyPrice: 0 };
+            todayPurchases[s.flower] = { bought: 0, sold: 0, spent: 0, unit: 'kg' };
           todayPurchases[s.flower].sold += s.qty || 0;
         }
       });
     }
+
+    // Buy rate per single unit = total paid / total bought.
+    Object.values(todayPurchases).forEach(p => {
+      p.buyRate = p.bought > 0 ? Math.round((p.spent / p.bought) * 100) / 100 : 0;
+    });
 
     // Update hints for all flowers
     FLOWERS.forEach((fl, i) => {
@@ -1017,16 +1030,18 @@ async function loadTodayPurchases() {
         const remaining = Math.max(0, Math.round((p.bought - p.sold) * 100) / 100);
         const soldTxt   = p.sold > 0 ? ` · Sold ${p.sold}` : '';
 
+        const rateTxt = p.buyRate ? `Bought at ₹${p.buyRate}/${p.unit} · ` : '';
+
         if (remaining <= 0) {
           // All sold out!
-          hintTxt.textContent = `✅ All sold! Bought ${p.bought} ${p.unit}`;
+          hintTxt.textContent = `${rateTxt}✅ All sold (${p.bought} ${p.unit})`;
           if (hint) {
             hint.querySelector('span').style.background = '#e8f5e9';
             hint.querySelector('span').style.color = '#2e7d32';
           }
         } else {
-          // Show remaining stock
-          hintTxt.textContent = `📦 ${remaining} ${p.unit} remaining${soldTxt} (Bought ${p.bought})`;
+          // Show buy rate first -- it's what you price the sale Rate above.
+          hintTxt.textContent = `${rateTxt}📦 ${remaining} ${p.unit} left${soldTxt} of ${p.bought}`;
           // Color based on remaining %
           const remainPct = remaining / p.bought;
           if (hint) {
@@ -1049,6 +1064,7 @@ async function loadTodayPurchases() {
           hint.querySelector('span').style.color = '#c62828';
         }
       }
+      updateMargin(i);
     });
   } catch(e) { console.log('Could not load purchases', e); }
 }
@@ -1088,6 +1104,7 @@ function buildFlowers(cid,prefix) {
         <span class="fl-nm">${fl}</span>
       </div>
       ${!hasPur ? `<div class="fl-hint" id="${prefix}_hint_${i}"><span>🛒 <span id="${prefix}_hint_txt_${i}">Loading...</span></span></div>` : ''}
+      ${!hasPur ? `<div class="fl-margin" id="${prefix}_m_${i}"></div>` : ''}
       <div class="fl-ins" id="${prefix}_in_${i}">
         ${hasPur?`
         <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
@@ -1150,6 +1167,33 @@ function recalcRow(prefix, i) {
   const price = Math.round(qty * rate * 100) / 100;
   $(`${prefix}_p_${i}`).value = price > 0 ? price : '';
   calcTot(prefix);
+  updateMargin(i);
+}
+
+// Compares the sale Rate against what the flower actually cost per unit, so a
+// loss is caught while typing rather than discovered at the end of the month.
+function updateMargin(i) {
+  const el = $(`s_m_${i}`);
+  if (!el) return;
+
+  const p      = todayPurchases[FLOWERS[i]];
+  const rateEl = $(`s_r_${i}`);
+  const rate   = parseFloat(rateEl && rateEl.value) || 0;
+
+  if (rateEl) rateEl.style.borderColor = '';
+
+  if (!p || !p.buyRate || rate <= 0) { el.innerHTML = ''; return; }
+
+  const diff = Math.round((rate - p.buyRate) * 100) / 100;
+
+  if (diff < 0) {
+    el.innerHTML = `<span class="m-bad">⚠️ LOSS ₹${Math.abs(diff)}/${p.unit} — you bought at ₹${p.buyRate}</span>`;
+    if (rateEl) rateEl.style.borderColor = 'var(--red)';
+  } else if (diff === 0) {
+    el.innerHTML = `<span class="m-flat">➖ No profit — same as buy rate ₹${p.buyRate}</span>`;
+  } else {
+    el.innerHTML = `<span class="m-ok">✅ Profit ₹${diff}/${p.unit}</span>`;
+  }
 }
 
 function calcTot(prefix) {
