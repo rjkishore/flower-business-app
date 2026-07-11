@@ -815,6 +815,8 @@ function toggleFl(prefix,i) {
 function calcTot(prefix) {
   let t=0;
   FLOWERS.forEach((_,i)=>{const item=$(`${prefix}_i_${i}`);if(item&&item.classList.contains('on'))t+=parseFloat($(`${prefix}_p_${i}`).value)||0;});
+  // Round to avoid floating point issues like 99.9999
+  t = Math.round(t * 100) / 100;
   $(prefix==='s'?'s-total':'p-total').textContent='₹ '+t.toLocaleString('en-IN');
 }
 
@@ -852,8 +854,8 @@ async function submitSale() {
   if(flowers.length===0){toast('Tick at least one flower!',true);return;}
   const collected=parseFloat($('s-coll').value)||0;
   const notes=$('s-notes').value;
-  const totalBilled=flowers.reduce((s,f)=>s+f.price,0);
-  const balance=totalBilled-collected;
+  const totalBilled=Math.round(flowers.reduce((s,f)=>s+f.price,0)*100)/100;
+  const balance=Math.round((totalBilled-collected)*100)/100;
   const btn=$('btn-sale');
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Saving...';
   setSync('saving');
@@ -881,7 +883,7 @@ async function submitPurchase() {
       const unit=($(`p_u_${i}`)&&$(`p_u_${i}`).value)||'bunch';
       const price=parseFloat($(`p_p_${i}`).value)||0;
       if(qty===0||price===0){toast('Enter qty & price for: '+fl.split('-')[0],true);hasError=true;return;}
-      purchases.push({name:fl,qty,unit,price,total:qty*price});
+      purchases.push({name:fl,qty,unit,price,total:Math.round(qty*price*100)/100});
     }
   });
   if(hasError)return;
