@@ -1434,7 +1434,7 @@ async function addFlower(){
   if(FLOWERS.includes(n)){toast('Flower already exists!',true);return;}
   FLOWERS.push(n);
   await fbPut('config/flowers', FLOWERS);
-  inp.value='';buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();
+  inp.value=''; rebuildAll();
   toast('✅ Flower added!');
 }
 async function debugFirebase(){
@@ -1497,7 +1497,7 @@ async function removeFlower(i){
   if(!confirm('Delete "'+FLOWERS[i]+'"? Are you sure?'))return;
   FLOWERS.splice(i,1);
   await fbPut('config/flowers', FLOWERS);
-  buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();
+  rebuildAll();
   toast('Flower deleted!');
 }
 
