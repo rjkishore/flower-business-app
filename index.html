@@ -1443,23 +1443,25 @@ async function debugFirebase(){
   out.style.display = 'block';
   out.textContent = 'Loading...';
   try {
-    const raw = await fbGet('config/customers');
-    // Test conversion
-    let converted = null;
-    if (raw !== null && raw !== undefined) {
-      if (Array.isArray(raw)) converted = raw.filter(Boolean);
-      else if (typeof raw === 'object') {
-        const keys = Object.keys(raw).sort((a,b)=>Number(a)-Number(b));
-        converted = keys.map(k=>raw[k]).filter(Boolean);
+    const [rawC, rawF] = await Promise.all([
+      fbGet('config/customers'),
+      fbGet('config/flowers')
+    ]);
+
+    function conv(raw) {
+      if (!raw) return [];
+      if (Array.isArray(raw)) return raw.filter(Boolean);
+      if (typeof raw === 'object') {
+        return Object.keys(raw).sort((a,b)=>Number(a)-Number(b)).map(k=>raw[k]).filter(Boolean);
       }
+      return [];
     }
+
     out.innerHTML = `
-      <b>Raw:</b> ${JSON.stringify(raw)}<br>
-      <b>Type:</b> ${typeof raw}<br>
-      <b>isArray:</b> ${Array.isArray(raw)}<br>
-      <b>Keys:</b> ${raw ? JSON.stringify(Object.keys(raw)) : 'none'}<br>
-      <b>Converted:</b> ${JSON.stringify(converted)}<br>
-      <b>CUSTOMERS now:</b> ${JSON.stringify(CUSTOMERS)}
+      <b>👤 CUSTOMERS in Firebase:</b> ${JSON.stringify(conv(rawC))}<br>
+      <b>👤 CUSTOMERS in App:</b> ${JSON.stringify(CUSTOMERS)}<br><br>
+      <b>🌸 FLOWERS in Firebase:</b> ${JSON.stringify(conv(rawF))}<br>
+      <b>🌸 FLOWERS in App:</b> ${JSON.stringify(FLOWERS)}
     `;
   } catch(e) {
     out.textContent = 'Error: ' + e.message;
