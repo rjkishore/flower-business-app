@@ -143,6 +143,21 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .waste-warn{background:#fff3e0;color:#e65100;}
 .waste-bad{background:#fce4ec;color:#c62828;}
 .stock-section{margin-top:14px;}
+/* Today profit meter */
+.profit-bar{background:linear-gradient(135deg,#1b5e20,#2e7d32);border-radius:14px;padding:14px 16px;margin:14px 14px 0;box-shadow:0 4px 14px rgba(0,0,0,0.15);}
+.profit-bar-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.profit-bar-title{color:rgba(255,255,255,0.8);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;}
+.profit-bar-date{color:rgba(255,255,255,0.6);font-size:11px;}
+.profit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.profit-item{background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 8px;text-align:center;}
+.profit-item .val{font-size:16px;font-weight:800;color:white;line-height:1.2;}
+.profit-item .lbl{font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;text-transform:uppercase;margin-top:3px;letter-spacing:0.5px;}
+.profit-item.highlight{background:rgba(105,240,174,0.2);border:1px solid rgba(105,240,174,0.4);}
+.profit-item.highlight .val{color:#69f0ae;}
+.progress-wrap{margin-top:10px;}
+.progress-label{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.7);margin-bottom:4px;}
+.progress-track{background:rgba(255,255,255,0.15);border-radius:20px;height:8px;overflow:hidden;}
+.progress-fill{background:linear-gradient(90deg,#69f0ae,#00e676);border-radius:20px;height:100%;transition:width 0.8s ease;}
 
 /* Edit/Delete buttons on history items */
 .hi-actions{display:flex;gap:8px;margin-top:8px;}
@@ -215,6 +230,37 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 <!-- Scrollable content -->
 <div class="scroll-area" id="scroll-area">
 <div class="ptr" id="ptr-indicator"><span class="ptr-spin"></span>Refreshing...</div>
+
+<!-- Today Profit Meter - shows on all tabs -->
+<div class="profit-bar" id="profit-meter">
+  <div class="profit-bar-top">
+    <span class="profit-bar-title">📊 Today's Summary</span>
+    <span class="profit-bar-date" id="pm-date"></span>
+  </div>
+  <div class="profit-grid">
+    <div class="profit-item">
+      <div class="val" id="pm-spent">₹0</div>
+      <div class="lbl">🛒 Spent</div>
+    </div>
+    <div class="profit-item">
+      <div class="val" id="pm-billed">₹0</div>
+      <div class="lbl">💰 Billed</div>
+    </div>
+    <div class="profit-item highlight">
+      <div class="val" id="pm-profit">₹0</div>
+      <div class="lbl">✅ Profit</div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Profit margin</span>
+      <span id="pm-margin">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="pm-bar" style="width:0%"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ══ SALE ══ -->
 <div class="pg on" id="pg-sale">
@@ -497,6 +543,54 @@ function toast(msg,err) {
 }
 
 // Tabs
+// ── Today Profit Meter ───────────────────────────────
+async function loadTodayProfit() {
+  try {
+    const today = new Date();
+    const yyyy  = today.getFullYear();
+    const mm    = String(today.getMonth()+1).padStart(2,'0');
+    const dd    = String(today.getDate()).padStart(2,'0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+
+    // Date display
+    $('pm-date').textContent = today.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+
+    const [sales, purs] = await Promise.all([fbGet('sales'), fbGet('purchases')]);
+
+    let totalSpent  = 0;
+    let totalBilled = 0;
+
+    if (purs) {
+      Object.values(purs)
+        .filter(p => p.date === todayStr)
+        .forEach(p => totalSpent += p.totalCost || 0);
+    }
+
+    if (sales) {
+      Object.values(sales)
+        .filter(s => s.date === todayStr && s.totalBilled > 0)
+        .forEach(s => totalBilled += s.totalBilled || 0);
+    }
+
+    const profit = totalBilled - totalSpent;
+    const margin = totalBilled > 0 ? Math.round((profit / totalBilled) * 100) : 0;
+    const barW   = Math.min(100, Math.max(0, margin));
+
+    $('pm-spent').textContent  = '₹' + totalSpent.toLocaleString('en-IN');
+    $('pm-billed').textContent = '₹' + totalBilled.toLocaleString('en-IN');
+    $('pm-profit').textContent = '₹' + profit.toLocaleString('en-IN');
+    $('pm-margin').textContent = margin + '%';
+    $('pm-bar').style.width    = barW + '%';
+
+    // Color profit based on value
+    const profitEl = $('pm-profit');
+    if (profit > 0)      profitEl.style.color = '#69f0ae';
+    else if (profit < 0) profitEl.style.color = '#ef5350';
+    else                 profitEl.style.color = 'white';
+
+  } catch(e) { console.log('Profit meter error:', e); }
+}
+
 // Today's purchase map: flowerName -> {qty, unit}
 let todayPurchases = {};
 
@@ -671,7 +765,7 @@ async function submitSale() {
         payMode:idx===0?payMode:'',collected:idx===0?collected:0,balance:idx===0?balance:0,
         totalBilled:idx===0?totalBilled:0,notes:idx===0?notes:'',groupTs,ts:groupTs});
     }
-    setSync('ok'); toast('✅ Sale saved!'); resetSale();
+    setSync('ok'); toast('✅ Sale saved!'); resetSale(); loadTodayProfit();
   } catch(e){setSync('err');toast('Error! Check internet.',true);console.error(e);}
   btn.disabled=false; btn.innerHTML='✅ Add Sale';
 }
@@ -698,7 +792,7 @@ async function submitPurchase() {
   try {
     for(const p of purchases)
       await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,buyPrice:p.price,totalCost:p.total,ts:Date.now()});
-    setSync('ok'); toast('✅ Purchase saved!'); resetPurchase();
+    setSync('ok'); toast('✅ Purchase saved!'); resetPurchase(); loadTodayProfit(); loadTodayPurchases();
   } catch(e){setSync('err');toast('Error! Check internet.',true);}
   btn.disabled=false; btn.innerHTML='✅ Add Purchase';
 }
@@ -994,6 +1088,8 @@ function refreshApp() {
   setTimeout(() => {
     if (activeTab === 'history') loadHistory();
     else if (activeTab === 'summary') loadSummary();
+    else if (activeTab === 'sale') loadTodayPurchases();
+    loadTodayProfit();
     ptr.style.display = 'none';
     btn.classList.remove('spinning');
     toast('✅ Refreshed!');
@@ -1040,7 +1136,8 @@ function init(){
   buildCusts();
   buildSetup();
   setSync('ok');
-  // Load today's purchases for hints
+  // Load today profit meter and purchase hints
+  loadTodayProfit();
   loadTodayPurchases();
 }
 init();
