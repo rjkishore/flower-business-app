@@ -774,61 +774,59 @@ let CUSTOMERS = []; // Start empty - add your real customers manually
 // Load from Firebase and update
 // Firebase returns arrays as objects {0:'a', 1:'b'} - convert back to array
 function fbToArray(data) {
-  if (!data) return null;
-  if (Array.isArray(data)) return data;
-  if (typeof data === 'object') return Object.values(data);
+  if (data === null || data === undefined) return null;
+  if (Array.isArray(data)) return data.filter(Boolean);
+  if (typeof data === 'object') {
+    return Object.keys(data)
+      .sort((a, b) => Number(a) - Number(b))
+      .map(k => data[k])
+      .filter(Boolean);
+  }
   return null;
 }
 
+// Loads config from Firebase. Only ever REPLACES the in-memory lists on a
+// successful read. On any failure it leaves them untouched and reports it.
 async function loadFlowersAndCustomers() {
+  let fbFlowers, fbCustomers;
   try {
-    const [fbFlowers, fbCustomers] = await Promise.all([
+    [fbFlowers, fbCustomers] = await Promise.all([
       fbGet('config/flowers'),
       fbGet('config/customers')
     ]);
-
-    // Firebase stores arrays as objects: {0:"a", 1:"b"}
-    // This function handles ALL cases
-    function firebaseToArray(data) {
-      if (data === null || data === undefined) return null;
-      // Already a proper array
-      if (Array.isArray(data)) return data.filter(Boolean);
-      // Firebase object with numeric keys {0:"a", 1:"b"}
-      if (typeof data === 'object') {
-        const keys = Object.keys(data).sort((a,b) => Number(a)-Number(b));
-        return keys.map(k => data[k]).filter(Boolean);
-      }
-      return null;
-    }
-
-    const flArr = firebaseToArray(fbFlowers);
-    const cuArr = firebaseToArray(fbCustomers);
-
-    // Update FLOWERS
-    if (flArr && flArr.length > 0) {
-      FLOWERS = flArr;
-    } else if (fbFlowers === null) {
-      // Save defaults first time
-      await fbPut('config/flowers', FLOWERS);
-    }
-
-    // Update CUSTOMERS
-    if (cuArr !== null) {
-      CUSTOMERS = cuArr; // even if empty []
-    } else if (fbCustomers === null) {
-      await fbPut('config/customers', []);
-    }
-
-    // Rebuild ALL UI with correct data
-    buildFlowers('s-flowers','s');
-    buildFlowers('p-flowers','p');
-    buildCusts();
-    buildPayCustDropdown();
-    buildSetup();
-
-  } catch(e) {
-    console.log('Error loading flowers/customers:', e);
+  } catch (e) {
+    console.error('Firebase read failed:', e);
+    toast('Could not load data. Check internet.', true);
+    setSync('err');
+    return false;
   }
+
+  const flArr = fbToArray(fbFlowers);
+  const cuArr = fbToArray(fbCustomers);
+
+  if (flArr && flArr.length > 0) {
+    FLOWERS = flArr;
+  } else if (fbFlowers === null) {
+    try { await fbPut('config/flowers', FLOWERS); } catch (e) { console.error(e); }
+  }
+
+  if (cuArr !== null) {
+    CUSTOMERS = cuArr;
+  } else if (fbCustomers === null) {
+    CUSTOMERS = [];
+    try { await fbPut('config/customers', []); } catch (e) { console.error(e); }
+  }
+
+  return true;
+}
+
+// Rebuilds every part of the UI that depends on FLOWERS / CUSTOMERS.
+function rebuildAll() {
+  buildFlowers('s-flowers', 's');
+  buildFlowers('p-flowers', 'p');
+  buildCusts();
+  buildPayCustDropdown();
+  buildSetup();
 }
 
 let payMode = 'Daily';
@@ -1420,14 +1418,14 @@ async function addCustomer(){
   if(CUSTOMERS.includes(n)){toast('Customer already exists!',true);return;}
   CUSTOMERS.push(n);
   await fbPut('config/customers', CUSTOMERS);
-  inp.value='';buildCusts();buildPayCustDropdown();buildSetup();
+  inp.value=''; rebuildAll();
   toast('✅ Customer added!');
 }
 async function removeCust(i){
   if(!confirm('Delete "'+CUSTOMERS[i]+'"? Are you sure?'))return;
   CUSTOMERS.splice(i,1);
   await fbPut('config/customers', CUSTOMERS);
-  buildCusts();buildPayCustDropdown();buildSetup();
+  rebuildAll();
   toast('Customer deleted!');
 }
 async function addFlower(){
@@ -1473,9 +1471,7 @@ async function clearAllCustomers(){
   if(!confirm('Delete ALL customers? This cannot be undone!'))return;
   CUSTOMERS = [];
   await fbPut('config/customers', []);
-  buildCusts();
-  buildPayCustDropdown();
-  buildSetup();
+  rebuildAll();
   toast('✅ All customers cleared!');
 }
 
@@ -1493,9 +1489,7 @@ async function resetFlowers(){
     "முல்லை - Mullai"
   ];
   await fbPut('config/flowers', FLOWERS);
-  buildFlowers('s-flowers','s');
-  buildFlowers('p-flowers','p');
-  buildSetup();
+  rebuildAll();
   toast('✅ Flowers reset to default!');
 }
 
@@ -1691,9 +1685,7 @@ async function saveQuickCustomer() {
   if(CUSTOMERS.includes(name)) { toast('Customer already exists!', true); return; }
   CUSTOMERS.push(name);
   await fbPut('config/customers', CUSTOMERS);
-  buildCusts();
-  buildPayCustDropdown();
-  buildSetup();
+  rebuildAll();
   // Auto select the new customer
   $('s-cust').value = name;
   $('quick-cust-modal').classList.remove('show');
@@ -2200,10 +2192,12 @@ async function init(){
     $('sum-week-from').value=nfmt(weekStart);
     $('sum-week-to').value=nfmt(nd);
   }
-  // Load flowers & customers from Firebase FIRST
-  await loadFlowersAndCustomers();
+  // Load config from Firebase, then build the UI. rebuildAll() runs no matter
+  // what, so a failed read can never leave the app with an empty list.
+  const ok = await loadFlowersAndCustomers();
+  rebuildAll();
 
-  setSync('ok');
+  setSync(ok ? 'ok' : 'err');
   // Check session (already logged in?)
   checkSession();
   // Restore last active tab
