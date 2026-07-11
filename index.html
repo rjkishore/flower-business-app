@@ -137,11 +137,30 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .badge{display:inline-flex;align-items:center;gap:6px;background:var(--gp);color:var(--gd);padding:9px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gl);margin-top:8px}
 .empty{text-align:center;padding:40px 20px;color:var(--txl)}
 .rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f0f0;}
+/* PIN Login Screen */
+.pin-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1b5e20,#2e7d32);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;}
+.pin-logo{width:90px;height:90px;border-radius:20px;object-fit:cover;margin-bottom:16px;box-shadow:0 4px 20px rgba(0,0,0,0.3);}
+.pin-title{color:white;font-size:20px;font-weight:800;text-align:center;margin-bottom:4px;}
+.pin-sub{color:rgba(255,255,255,0.7);font-size:13px;text-align:center;margin-bottom:32px;}
+.pin-user-btns{display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;justify-content:center;}
+.pin-user-btn{padding:10px 20px;border-radius:30px;border:2px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.1);color:white;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;}
+.pin-user-btn.active{background:white;color:var(--gd);border-color:white;}
+.pin-dots{display:flex;gap:14px;margin-bottom:28px;justify-content:center;}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,0.6);background:transparent;transition:all 0.15s;}
+.pin-dot.filled{background:white;border-color:white;}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:280px;}
+.pin-btn{padding:18px;background:rgba(255,255,255,0.15);border:none;border-radius:14px;color:white;font-size:22px;font-weight:700;cursor:pointer;transition:all 0.15s;text-align:center;}
+.pin-btn:active{background:rgba(255,255,255,0.35);transform:scale(0.95);}
+.pin-btn.del{font-size:18px;}
+.pin-btn.empty{background:transparent;cursor:default;}
+.pin-error{color:#ff8a80;font-size:13px;font-weight:600;text-align:center;margin-top:14px;min-height:20px;}
+
 /* Festival popup notification */
 .fest-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;justify-content:center;align-items:center;padding:20px;}
 .fest-overlay.show{display:flex;}
 .fest-popup{background:white;border-radius:20px;padding:0;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.3);animation:popIn 0.3s ease;}
 @keyframes popIn{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 .fest-popup-header{padding:24px 20px 16px;text-align:center;}
 .fest-popup-header.today-hdr{background:linear-gradient(135deg,#e65100,#ff8f00);}
 .fest-popup-header.tomorrow-hdr{background:linear-gradient(135deg,#4a148c,#7b1fa2);}
@@ -245,6 +264,46 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 </style>
 </head>
 <body>
+
+<!-- PIN Login Screen -->
+<div id="pin-screen" class="pin-screen">
+  <img src="icon-192.png" class="pin-logo" onerror="this.style.display='none'">
+  <div class="pin-title">ஆறுமுகம் பூ வினியோகம்</div>
+  <div class="pin-sub">உங்கள் பெயரை தேர்வு செய்து PIN உள்ளிடவும்</div>
+
+  <!-- User selection -->
+  <div class="pin-user-btns">
+    <button class="pin-user-btn active" id="ub-kishore" onclick="selectUser('kishore','Kishore')">Kishore</button>
+    <button class="pin-user-btn" id="ub-ammu"    onclick="selectUser('ammu','Ammu')">Ammu</button>
+    <button class="pin-user-btn" id="ub-aru"     onclick="selectUser('aru','Aru')">Aru</button>
+  </div>
+
+  <!-- PIN dots -->
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+
+  <!-- Number pad -->
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn empty"></button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+  </div>
+
+  <div class="pin-error" id="pin-error"></div>
+</div>
 
 <!-- Install Banner (shown on non-iOS when installable) -->
 <div id="install-banner">
@@ -1414,14 +1473,18 @@ async function loadPaymentHistory() {
       el.innerHTML = '<p style="font-size:13px;color:#999;text-align:center;padding:10px">No payments yet</p>';
       return;
     }
-    const list = Object.values(payments).sort((a,b) => b.ts - a.ts).slice(0, 20);
+    const list = Object.entries(payments).map(([k,v])=>({...v,_key:k})).sort((a,b) => b.ts - a.ts).slice(0, 20);
     el.innerHTML = list.map(p => `
-      <div class="pay-item">
-        <div>
+      <div class="pay-item" style="flex-wrap:wrap;gap:6px;">
+        <div style="flex:1;">
           <div class="pay-name">${p.customer}</div>
           <div class="pay-detail">${p.date} · ${p.method||'Cash'} ${p.notes ? '· '+p.notes : ''}</div>
         </div>
-        <div class="pay-amount">+₹${p.amount}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="pay-amount">+₹${p.amount}</div>
+          <button onclick="editPayment('${p._key}')" style="background:none;border:1px solid var(--gm);color:var(--gm);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">✏️</button>
+          <button onclick="deletePayment('${p._key}')" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;">🗑️</button>
+        </div>
       </div>`).join('');
   } catch(e) { el.innerHTML = '<p style="color:red;font-size:12px;padding:10px">Error loading</p>'; }
 }
@@ -1450,6 +1513,65 @@ function saveQuickCustomer() {
   $('s-cust').value = name;
   $('quick-cust-modal').classList.remove('show');
   toast('✅ ' + name + ' added!');
+}
+
+// ── Edit & Delete Payments ────────────────────────────
+async function editPayment(key) {
+  try {
+    const data = await fbGet(`payments/${key}`);
+    if (!data) { toast('Payment not found!', true); return; }
+
+    // Build simple prompt-based edit (reuse edit modal)
+    $('edit-key').value   = key;
+    $('edit-type').value  = 'payment';
+    $('edit-date').value  = data.date || '';
+    $('edit-sale-fields').style.display = 'none';
+    $('edit-pur-fields').style.display  = 'none';
+
+    // Show payment edit fields
+    let payEditHtml = `
+      <div class="modal-field"><label>Customer</label>
+        <select id="edit-pay-cust" style="width:100%;padding:11px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);">
+          ${CUSTOMERS.map(c=>`<option value="${c}" ${c===data.customer?'selected':''}>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div class="modal-field"><label>Amount (₹)</label>
+        <input type="number" id="edit-pay-amt" value="${data.amount||0}" min="0" inputmode="numeric">
+      </div>
+      <div class="modal-field"><label>Method</label>
+        <select id="edit-pay-method" style="width:100%;padding:11px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);">
+          <option ${data.method==='Cash'?'selected':''}>Cash</option>
+          <option ${data.method==='UPI'?'selected':''}>UPI</option>
+          <option ${data.method==='Other'?'selected':''}>Other</option>
+        </select>
+      </div>
+      <div class="modal-field"><label>Notes</label>
+        <input type="text" id="edit-pay-notes" value="${data.notes||''}" placeholder="Notes...">
+      </div>`;
+
+    // Insert into modal
+    let existingPayFields = document.getElementById('edit-pay-fields');
+    if (!existingPayFields) {
+      const div = document.createElement('div');
+      div.id = 'edit-pay-fields';
+      $('edit-sale-fields').parentNode.insertBefore(div, $('edit-sale-fields'));
+    }
+    document.getElementById('edit-pay-fields').innerHTML = payEditHtml;
+    document.getElementById('edit-pay-fields').style.display = 'block';
+
+    $('edit-modal').classList.add('show');
+  } catch(e) { toast('Error loading payment!', true); }
+}
+
+async function deletePayment(key) {
+  if (confirm('Delete this payment? Cannot be undone!')) {
+    try {
+      await fbDelete(`payments/${key}`);
+      toast('🗑️ Payment deleted!');
+      loadOutstanding();
+      loadPaymentHistory();
+    } catch(e) { toast('Error deleting!', true); }
+  }
 }
 
 // ── Edit & Delete ─────────────────────────────────────
@@ -1503,6 +1625,24 @@ async function saveEdit() {
   const type  = $('edit-type').value;
   const date  = $('edit-date').value;
   if (!date) { toast('Please select a date!', true); return; }
+
+  // Handle payment edit
+  if (type === 'payment') {
+    try {
+      const amt = parseFloat($('edit-pay-amt').value)||0;
+      await fbPut(`payments/${fbKey}`, {
+        customer: $('edit-pay-cust').value,
+        date, amount: amt,
+        method: $('edit-pay-method').value,
+        notes: $('edit-pay-notes').value,
+        ts: Date.now()
+      });
+      $('edit-modal').classList.remove('show');
+      toast('✅ Payment updated!');
+      loadOutstanding(); loadPaymentHistory();
+    } catch(e) { toast('Error saving!', true); }
+    return;
+  }
 
   try {
     let updateData = {};
@@ -1668,6 +1808,98 @@ function checkFestivals(){
   }, 800);
 }
 
+// ── PIN Login ─────────────────────────────────────────
+const USERS = {
+  'kishore': { pin:'3110', name:'Kishore' },
+  'ammu':    { pin:'0709', name:'Ammu'    },
+  'aru':     { pin:'0907', name:'Aru'     }
+};
+
+let currentUser   = 'kishore';
+let currentPin    = '';
+let pinLocked     = false;
+let pinAttempts   = 0;
+
+function selectUser(userId, name) {
+  currentUser = userId;
+  currentPin  = '';
+  updatePinDots();
+  $('pin-error').textContent = '';
+  // Update button styles
+  Object.keys(USERS).forEach(u => {
+    const btn = $('ub-'+u);
+    if (btn) btn.className = 'pin-user-btn' + (u===userId ? ' active' : '');
+  });
+}
+
+function pinPress(digit) {
+  if (pinLocked) return;
+  if (currentPin.length >= 4) return;
+  currentPin += digit;
+  updatePinDots();
+  if (currentPin.length === 4) {
+    setTimeout(checkPin, 200);
+  }
+}
+
+function pinDelete() {
+  if (pinLocked) return;
+  currentPin = currentPin.slice(0, -1);
+  updatePinDots();
+  $('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    $('d'+i).className = 'pin-dot' + (i < currentPin.length ? ' filled' : '');
+  }
+}
+
+function checkPin() {
+  const user = USERS[currentUser];
+  if (currentPin === user.pin) {
+    // Correct! Save session and show app
+    sessionStorage.setItem('fb_user', currentUser);
+    sessionStorage.setItem('fb_name', user.name);
+    $('pin-screen').style.display = 'none';
+    pinAttempts = 0;
+    // Update header with user name
+    const h1 = document.querySelector('.hdr h1');
+    if (h1) h1.innerHTML = '🌸 ஆறுமுகம் <span style="font-size:12px;opacity:0.7;">· '+user.name+'</span>';
+  } else {
+    // Wrong PIN
+    pinAttempts++;
+    currentPin = '';
+    updatePinDots();
+    if (pinAttempts >= 5) {
+      pinLocked = true;
+      $('pin-error').textContent = '❌ 5 முறை தவறு! 30 வினாடி காத்திருங்கள்...';
+      setTimeout(() => {
+        pinLocked  = false;
+        pinAttempts = 0;
+        $('pin-error').textContent = '';
+      }, 30000);
+    } else {
+      $('pin-error').textContent = `❌ தவறான PIN! மீண்டும் முயற்சிக்கவும் (${5-pinAttempts} வாய்ப்பு மீதம்)`;
+      // Shake animation
+      const dots = document.querySelector('.pin-dots');
+      dots.style.animation = 'shake 0.3s';
+      setTimeout(() => dots.style.animation = '', 300);
+    }
+  }
+}
+
+// Check if already logged in this session
+function checkSession() {
+  const user = sessionStorage.getItem('fb_user');
+  const name = sessionStorage.getItem('fb_name');
+  if (user && USERS[user]) {
+    $('pin-screen').style.display = 'none';
+    const h1 = document.querySelector('.hdr h1');
+    if (h1) h1.innerHTML = '🌸 ஆறுமுகம் <span style="font-size:12px;opacity:0.7;">· '+name+'</span>';
+  }
+}
+
 function init(){
   setToday();
   // Set default dates for summary pickers
@@ -1685,6 +1917,8 @@ function init(){
   buildPayCustDropdown();
   buildSetup();
   setSync('ok');
+  // Check session (already logged in?)
+  checkSession();
   // Check festivals
   checkFestivals();
   // Load today profit meter and purchase hints
