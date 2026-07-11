@@ -390,19 +390,52 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
   </div>
 
   <div class="card">
-    <div class="ct">📅 Select Month</div>
-    <div style="display:flex;gap:8px;">
-      <div class="sw" style="flex:1"><select id="sum-month">
-        <option value="1">January</option><option value="2">February</option>
-        <option value="3">March</option><option value="4">April</option>
-        <option value="5">May</option><option value="6">June</option>
-        <option value="7" selected>July</option><option value="8">August</option>
-        <option value="9">September</option><option value="10">October</option>
-        <option value="11">November</option><option value="12">December</option>
-      </select></div>
-      <input type="number" id="sum-year" value="2026" min="2024" max="2030" style="width:90px;padding:12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);">
-      <button class="btn-add" onclick="loadSummary()">Go</button>
+    <div class="ct">📅 Select Period</div>
+
+    <!-- Day / Week / Month toggle -->
+    <div class="mt" style="margin-bottom:12px;">
+      <button class="mb" id="period-day"   onclick="setPeriod('day')">📅 Day</button>
+      <button class="mb" id="period-week"  onclick="setPeriod('week')">📆 Week</button>
+      <button class="mb on" id="period-month" onclick="setPeriod('month')">🗓️ Month</button>
     </div>
+
+    <!-- Day picker -->
+    <div id="period-day-picker" style="display:none;margin-bottom:8px;">
+      <label style="font-size:11px;color:var(--txl);font-weight:600;display:block;margin-bottom:4px;">Select Date</label>
+      <input type="date" id="sum-day" style="width:100%;padding:11px 12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);">
+    </div>
+
+    <!-- Week picker -->
+    <div id="period-week-picker" style="display:none;margin-bottom:8px;">
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--txl);font-weight:600;display:block;margin-bottom:4px;">From</label>
+          <input type="date" id="sum-week-from" style="width:100%;padding:10px;border:1.5px solid var(--gl);border-radius:10px;font-size:13px;outline:none;background:var(--gp);">
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:11px;color:var(--txl);font-weight:600;display:block;margin-bottom:4px;">To</label>
+          <input type="date" id="sum-week-to" style="width:100%;padding:10px;border:1.5px solid var(--gl);border-radius:10px;font-size:13px;outline:none;background:var(--gp);">
+        </div>
+      </div>
+    </div>
+
+    <!-- Month picker -->
+    <div id="period-month-picker" style="margin-bottom:8px;">
+      <div style="display:flex;gap:8px;">
+        <div class="sw" style="flex:1"><select id="sum-month">
+          <option value="1">January</option><option value="2">February</option>
+          <option value="3">March</option><option value="4">April</option>
+          <option value="5">May</option><option value="6">June</option>
+          <option value="7" selected>July</option><option value="8">August</option>
+          <option value="9">September</option><option value="10">October</option>
+          <option value="11">November</option><option value="12">December</option>
+        </select></div>
+        <input type="number" id="sum-year" value="2026" min="2024" max="2030"
+          style="width:90px;padding:11px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);">
+      </div>
+    </div>
+
+    <button class="btn-add" style="width:100%;padding:12px;" onclick="loadSummary()">📊 Show Summary</button>
   </div>
   <div class="sum-grid">
     <div class="sum-card spent"><div class="val" id="sum-spent">₹0</div><div class="lbl">Market Spent</div></div>
