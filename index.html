@@ -1349,9 +1349,9 @@ function buildSetup(){
   $('flower-manage').innerHTML=FLOWERS.map((f,i)=>`<div class="list-item"><span>${f}</span><button class="del-btn" onclick="removeFlower(${i})">✕</button></div>`).join('');
 }
 function addCustomer(){const inp=$('new-cust'),n=inp.value.trim();if(!n)return;CUSTOMERS.push(n);localStorage.setItem('cus',JSON.stringify(CUSTOMERS));inp.value='';buildCusts();buildPayCustDropdown();buildSetup();toast('✅ Customer added!');}
-function removeCust(i){CUSTOMERS.splice(i,1);localStorage.setItem('cus',JSON.stringify(CUSTOMERS));buildCusts();buildSetup();}
+function removeCust(i){if(!confirm('Delete "'+CUSTOMERS[i]+'"? Are you sure?'))return;CUSTOMERS.splice(i,1);localStorage.setItem('cus',JSON.stringify(CUSTOMERS));buildCusts();buildSetup();toast('Customer deleted!');}
 function addFlower(){const inp=$('new-flower'),n=inp.value.trim();if(!n)return;FLOWERS.push(n);localStorage.setItem('flo',JSON.stringify(FLOWERS));inp.value='';buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();toast('✅ Flower added!');}
-function removeFlower(i){FLOWERS.splice(i,1);localStorage.setItem('flo',JSON.stringify(FLOWERS));buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();}
+function removeFlower(i){if(!confirm('Delete "'+FLOWERS[i]+'"? Are you sure?'))return;FLOWERS.splice(i,1);localStorage.setItem('flo',JSON.stringify(FLOWERS));buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();toast('Flower deleted!');}
 
 // ── Period selector ───────────────────────────────────
 let currentPeriod = 'month';
