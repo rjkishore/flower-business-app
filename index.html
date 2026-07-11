@@ -133,6 +133,16 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .del-btn{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1}
 .badge{display:inline-flex;align-items:center;gap:6px;background:var(--gp);color:var(--gd);padding:9px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gl);margin-top:8px}
 .empty{text-align:center;padding:40px 20px;color:var(--txl)}
+.stock-table{width:100%;border-collapse:collapse;font-size:13px;}
+.stock-table th{background:var(--gp);color:var(--gd);font-size:11px;padding:8px 10px;text-align:center;font-weight:700;border-bottom:2px solid var(--gl);}
+.stock-table td{padding:9px 10px;text-align:center;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.stock-table tr:last-child td{border-bottom:none;}
+.stock-table .fl-name{text-align:left;font-weight:600;color:var(--gd);font-size:12px;}
+.waste-pill{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.waste-ok{background:#e8f5e9;color:#2e7d32;}
+.waste-warn{background:#fff3e0;color:#e65100;}
+.waste-bad{background:#fce4ec;color:#c62828;}
+.stock-section{margin-top:14px;}
 
 /* Edit/Delete buttons on history items */
 .hi-actions{display:flex;gap:8px;margin-top:8px;}
@@ -284,6 +294,15 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
     <div class="ct">👤 Customer-wise</div>
     <div id="sum-customers"><p style="font-size:13px;color:#999;text-align:center;padding:10px">Select month and tap Go</p></div>
   </div>
+
+  <!-- Stock tracking card -->
+  <div class="card stock-section">
+    <div class="ct">📦 Stock & Waste Tracking</div>
+    <div id="sum-stock">
+      <p style="font-size:13px;color:#999;text-align:center;padding:10px">Select month and tap Go</p>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══ SETUP ══ -->
@@ -765,13 +784,72 @@ async function loadSummary() {
     $('sum-profit').textContent='₹'+profit.toLocaleString('en-IN');
     $('sum-due').textContent='₹'+outstanding.toLocaleString('en-IN');
     const custs=Object.entries(custMap).sort((a,b)=>b[1].billed-a[1].billed);
-    if(custs.length===0){$('sum-customers').innerHTML='<p style="font-size:13px;color:#999;text-align:center;padding:10px">No sales this month</p>';return;}
-    $('sum-customers').innerHTML=custs.map(([name,d])=>`
-      <div class="list-item">
-        <div><div style="font-weight:600;font-size:13px">${name}</div>
-        <div style="font-size:11px;color:#999">Billed ₹${d.billed} · Collected ₹${d.collected}</div></div>
-        <span class="pill ${d.balance>0?'p-d':'p-p'}" style="flex-shrink:0">${d.balance>0?'Due ₹'+d.balance:'✓ Paid'}</span>
-      </div>`).join('');
+    if(custs.length===0){$('sum-customers').innerHTML='<p style="font-size:13px;color:#999;text-align:center;padding:10px">No sales this month</p>';}
+    else {
+      $('sum-customers').innerHTML=custs.map(([name,d])=>`
+        <div class="list-item">
+          <div><div style="font-weight:600;font-size:13px">${name}</div>
+          <div style="font-size:11px;color:#999">Billed ₹${d.billed} · Collected ₹${d.collected}</div></div>
+          <span class="pill ${d.balance>0?'p-d':'p-p'}" style="flex-shrink:0">${d.balance>0?'Due ₹'+d.balance:'✓ Paid'}</span>
+        </div>`).join('');
+    }
+
+    // ── Stock & Waste Tracking ──────────────────────────
+    // Build flower-wise bought vs sold vs wasted map
+    const stockMap = {};
+
+    // Bought from purchases
+    if(purs) {
+      Object.values(purs).filter(p=>p.date>=startD&&p.date<=endD).forEach(p=>{
+        if(!stockMap[p.flower]) stockMap[p.flower]={name:p.flower,bought:0,sold:0,unit:'kg'};
+        stockMap[p.flower].bought += p.qty || 0;
+        stockMap[p.flower].unit    = p.unit || 'kg';
+      });
+    }
+
+    // Sold from sales
+    if(sales) {
+      Object.values(sales).filter(s=>s.date>=startD&&s.date<=endD).forEach(s=>{
+        if(!stockMap[s.flower]) stockMap[s.flower]={name:s.flower,bought:0,sold:0,unit:'kg'};
+        stockMap[s.flower].sold += s.qty || 0;
+      });
+    }
+
+    const stockItems = Object.values(stockMap).filter(s=>s.bought>0);
+
+    if(stockItems.length===0){
+      $('sum-stock').innerHTML='<p style="font-size:13px;color:#999;text-align:center;padding:10px">No stock data this month</p>';
+    } else {
+      $('sum-stock').innerHTML = `
+        <table class="stock-table">
+          <thead>
+            <tr>
+              <th style="text-align:left">Flower</th>
+              <th>🛒 Bought</th>
+              <th>✅ Sold</th>
+              <th>🗑️ Wasted</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${stockItems.map(s=>{
+              const wasted = Math.max(0, s.bought - s.sold);
+              const wastePercent = s.bought > 0 ? (wasted/s.bought)*100 : 0;
+              const pillClass = wastePercent===0 ? 'waste-ok' : wastePercent<=25 ? 'waste-warn' : 'waste-bad';
+              const pillIcon  = wastePercent===0 ? '✅' : wastePercent<=25 ? '⚠️' : '🗑️';
+              return `<tr>
+                <td class="fl-name">${s.name.split('-')[0].trim()}</td>
+                <td>${s.bought.toFixed(1)} ${s.unit}</td>
+                <td>${s.sold.toFixed(1)} ${s.unit}</td>
+                <td><span class="waste-pill ${pillClass}">${pillIcon} ${wasted.toFixed(1)} ${s.unit}</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:10px;padding:10px;background:var(--gp);border-radius:10px;font-size:12px;color:var(--gd);">
+          <b>Legend:</b> ✅ No waste &nbsp;|&nbsp; ⚠️ Some waste &nbsp;|&nbsp; 🗑️ High waste
+        </div>`;
+    }
+
     setSync('ok');
   } catch(e){toast('Error loading summary!',true);setSync('err');}
 }
