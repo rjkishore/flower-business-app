@@ -127,6 +127,25 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .del-btn{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1}
 .badge{display:inline-flex;align-items:center;gap:6px;background:var(--gp);color:var(--gd);padding:9px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gl);margin-top:8px}
 .empty{text-align:center;padding:40px 20px;color:var(--txl)}
+
+/* Edit/Delete buttons on history items */
+.hi-actions{display:flex;gap:8px;margin-top:8px;}
+.btn-edit{flex:1;padding:8px;border:1.5px solid var(--gm);border-radius:8px;background:white;color:var(--gm);font-size:12px;font-weight:700;cursor:pointer;}
+.btn-del{flex:1;padding:8px;border:1.5px solid var(--red);border-radius:8px;background:white;color:var(--red);font-size:12px;font-weight:700;cursor:pointer;}
+
+/* Modal overlay */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9000;justify-content:center;align-items:flex-end;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:white;width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:85vh;overflow-y:auto;}
+.modal-title{font-size:15px;font-weight:700;color:var(--gd);margin-bottom:16px;text-align:center;}
+.modal-field{margin-bottom:12px;}
+.modal-field label{display:block;font-size:11px;color:var(--txl);font-weight:600;margin-bottom:4px;}
+.modal-field input,.modal-field select{width:100%;padding:11px 12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);}
+.modal-field input:focus,.modal-field select:focus{border-color:var(--gm);background:white;}
+.modal-btns{display:flex;gap:10px;margin-top:16px;}
+.modal-save{flex:1;padding:14px;background:var(--gm);color:white;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;}
+.modal-cancel{flex:1;padding:14px;background:#eee;color:#555;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;}
+.modal-delete{width:100%;padding:14px;background:white;color:var(--red);border:2px solid var(--red);border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;}
 .empty .ei{font-size:48px;margin-bottom:10px}
 .empty p{font-size:14px}
 
@@ -296,6 +315,84 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 </div><!-- end scroll-area -->
 <div class="toast" id="toast"></div>
 
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-title">✏️ Edit Entry</div>
+    <input type="hidden" id="edit-key">
+    <input type="hidden" id="edit-type">
+    <div class="modal-field">
+      <label>Date</label>
+      <input type="date" id="edit-date">
+    </div>
+    <div id="edit-sale-fields">
+      <div class="modal-field">
+        <label>Customer</label>
+        <div style="position:relative"><select id="edit-customer" style="width:100%;padding:11px 12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);appearance:none;"></select>
+        <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gm);pointer-events:none">▾</span></div>
+      </div>
+      <div class="modal-field">
+        <label>Flower</label>
+        <div style="position:relative"><select id="edit-flower" style="width:100%;padding:11px 12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);appearance:none;"></select>
+        <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gm);pointer-events:none">▾</span></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="modal-field" style="flex:1">
+          <label>Qty</label>
+          <input type="number" id="edit-qty" placeholder="0" min="0" inputmode="decimal">
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label>₹ Price</label>
+          <input type="number" id="edit-price" placeholder="0" min="0" inputmode="numeric">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="modal-field" style="flex:1">
+          <label>Payment Mode</label>
+          <div style="position:relative"><select id="edit-mode" style="width:100%;padding:11px 12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);appearance:none;">
+            <option>Daily</option><option>Monthly</option>
+          </select>
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gm);pointer-events:none">▾</span></div>
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label>Collected (₹)</label>
+          <input type="number" id="edit-collected" placeholder="0" min="0" inputmode="numeric">
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Notes</label>
+        <input type="text" id="edit-notes" placeholder="Notes...">
+      </div>
+    </div>
+    <div id="edit-pur-fields" style="display:none;">
+      <div class="modal-field">
+        <label>Flower</label>
+        <div style="position:relative"><select id="edit-pur-flower" style="width:100%;padding:11px 12px;border:1.5px solid var(--gl);border-radius:10px;font-size:14px;outline:none;background:var(--gp);appearance:none;"></select>
+        <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--gm);pointer-events:none">▾</span></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <div class="modal-field" style="flex:1">
+          <label>Qty</label>
+          <input type="number" id="edit-pur-qty" placeholder="0" min="0" inputmode="decimal">
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label>Unit</label>
+          <input type="text" id="edit-pur-unit" placeholder="kg/bunch">
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label>₹ Price</label>
+          <input type="number" id="edit-pur-price" placeholder="0" min="0" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="$('edit-modal').classList.remove('show')">Cancel</button>
+      <button class="modal-save" onclick="saveEdit()">💾 Save</button>
+    </div>
+    <button class="modal-delete" onclick="deleteEntry()">🗑️ Delete this entry</button>
+  </div>
+</div>
+
 <script>
 const RTDB = "https://flower-business-95952-default-rtdb.firebaseio.com";
 const $ = id => document.getElementById(id);
@@ -345,6 +442,16 @@ async function fbPost(path, data) {
 }
 async function fbGet(path) {
   const r = await fetch(`${RTDB}/${path}.json`);
+  if(!r.ok) throw new Error('Firebase: '+r.status);
+  return r.json();
+}
+async function fbPut(path, data) {
+  const r = await fetch(`${RTDB}/${path}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  if(!r.ok) throw new Error('Firebase: '+r.status);
+  return r.json();
+}
+async function fbDelete(path) {
+  const r = await fetch(`${RTDB}/${path}.json`,{method:'DELETE'});
   if(!r.ok) throw new Error('Firebase: '+r.status);
   return r.json();
 }
@@ -510,16 +617,16 @@ async function loadHistory() {
     let items=[];
     if(sales){
       const grouped={};
-      Object.values(sales).forEach(s=>{
+      Object.entries(sales).forEach(([key,s])=>{
         if(s.totalBilled>0){
-          const key=s.groupTs||s.ts;
-          if(!grouped[key]) grouped[key]={...s,flowers:[s.flower]};
-          else grouped[key].flowers.push(s.flower);
+          const gKey=s.groupTs||s.ts;
+          if(!grouped[gKey]) grouped[gKey]={...s,flowers:[s.flower],_fbKey:key,_allKeys:[key]};
+          else { grouped[gKey].flowers.push(s.flower); grouped[gKey]._allKeys.push(key); }
         }
       });
       Object.values(grouped).forEach(g=>items.push({...g,_type:'sale'}));
     }
-    if(purs) Object.values(purs).forEach(p=>items.push({...p,_type:'pur'}));
+    if(purs) Object.entries(purs).forEach(([key,p])=>items.push({...p,_type:'pur',_fbKey:key}));
     items.sort((a,b)=>b.ts-a.ts);
     if(items.length===0){el.innerHTML='<div class="empty"><div class="ei">📋</div><p>No entries yet!</p></div>';return;}
     el.innerHTML=items.slice(0,50).map(item=>{
@@ -532,13 +639,23 @@ async function loadHistory() {
           <div class="hi-amts">
             <span class="pill p-b">Billed ₹${item.totalBilled}</span>
             <span class="pill ${item.balance>0?'p-d':'p-p'}">${item.balance>0?'Due ₹'+item.balance:'✓ Paid'}</span>
-          </div></div>`;
+          </div>
+          <div class="hi-actions">
+            <button class="btn-edit" onclick="openEdit('${item._fbKey}','sale')">✏️ Edit</button>
+            <button class="btn-del"  onclick="confirmDelete('${item._fbKey}','sale')">🗑️ Delete</button>
+          </div>
+        </div>`;
       } else {
         return `<div class="hi pur">
           <div class="hi-date">${item.date} · Market Purchase</div>
           <div class="hi-name">🛒 ${item.flower.split('-')[0].trim()}</div>
           <div class="hi-fls">${item.qty} ${item.unit} × ₹${item.buyPrice}/unit</div>
-          <div class="hi-amts"><span class="pill p-b">Spent ₹${item.totalCost}</span></div></div>`;
+          <div class="hi-amts"><span class="pill p-b">Spent ₹${item.totalCost}</span></div>
+          <div class="hi-actions">
+            <button class="btn-edit" onclick="openEdit('${item._fbKey}','purchase')">✏️ Edit</button>
+            <button class="btn-del"  onclick="confirmDelete('${item._fbKey}','purchase')">🗑️ Delete</button>
+          </div>
+        </div>`;
       }
     }).join('');
     setSync('ok');
@@ -602,6 +719,113 @@ function addCustomer(){const inp=$('new-cust'),n=inp.value.trim();if(!n)return;C
 function removeCust(i){CUSTOMERS.splice(i,1);localStorage.setItem('cus',JSON.stringify(CUSTOMERS));buildCusts();buildSetup();}
 function addFlower(){const inp=$('new-flower'),n=inp.value.trim();if(!n)return;FLOWERS.push(n);localStorage.setItem('flo',JSON.stringify(FLOWERS));inp.value='';buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();toast('✅ Flower added!');}
 function removeFlower(i){FLOWERS.splice(i,1);localStorage.setItem('flo',JSON.stringify(FLOWERS));buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();}
+
+// ── Edit & Delete ─────────────────────────────────────
+let currentEditData = null;
+
+async function openEdit(fbKey, type) {
+  currentEditData = { fbKey, type };
+
+  // Build dropdowns
+  const custSel = $('edit-customer');
+  custSel.innerHTML = CUSTOMERS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const flSel = $('edit-flower');
+  flSel.innerHTML = FLOWERS.map(f=>`<option value="${f}">${f}</option>`).join('');
+  const flPurSel = $('edit-pur-flower');
+  flPurSel.innerHTML = FLOWERS.map(f=>`<option value="${f}">${f}</option>`).join('');
+
+  try {
+    const path = type === 'sale' ? 'sales' : 'purchases';
+    const data = await fbGet(`${path}/${fbKey}`);
+    if (!data) { toast('Entry not found!', true); return; }
+
+    $('edit-key').value = fbKey;
+    $('edit-type').value = type;
+    $('edit-date').value = data.date || '';
+
+    if (type === 'sale') {
+      $('edit-sale-fields').style.display = 'block';
+      $('edit-pur-fields').style.display = 'none';
+      $('edit-customer').value = data.customer || '';
+      $('edit-flower').value = data.flower || '';
+      $('edit-qty').value = data.qty || '';
+      $('edit-price').value = data.price || '';
+      $('edit-mode').value = data.payMode || 'Daily';
+      $('edit-collected').value = data.collected || '';
+      $('edit-notes').value = data.notes || '';
+    } else {
+      $('edit-sale-fields').style.display = 'none';
+      $('edit-pur-fields').style.display = 'block';
+      $('edit-pur-flower').value = data.flower || '';
+      $('edit-pur-qty').value = data.qty || '';
+      $('edit-pur-unit').value = data.unit || '';
+      $('edit-pur-price').value = data.buyPrice || '';
+    }
+
+    $('edit-modal').classList.add('show');
+  } catch(e) { toast('Error loading entry!', true); }
+}
+
+async function saveEdit() {
+  const fbKey = $('edit-key').value;
+  const type  = $('edit-type').value;
+  const date  = $('edit-date').value;
+  if (!date) { toast('Please select a date!', true); return; }
+
+  try {
+    let updateData = {};
+    if (type === 'sale') {
+      const price     = parseFloat($('edit-price').value) || 0;
+      const collected = parseFloat($('edit-collected').value) || 0;
+      updateData = {
+        date, customer: $('edit-customer').value,
+        flower: $('edit-flower').value,
+        qty: parseFloat($('edit-qty').value) || 0,
+        price, payMode: $('edit-mode').value,
+        collected, balance: price - collected,
+        totalBilled: price,
+        notes: $('edit-notes').value
+      };
+      await fbPut(`sales/${fbKey}`, updateData);
+    } else {
+      const qty   = parseFloat($('edit-pur-qty').value) || 0;
+      const price = parseFloat($('edit-pur-price').value) || 0;
+      updateData = {
+        date, flower: $('edit-pur-flower').value,
+        qty, unit: $('edit-pur-unit').value || 'bunch',
+        buyPrice: price, totalCost: qty * price
+      };
+      await fbPut(`purchases/${fbKey}`, updateData);
+    }
+    $('edit-modal').classList.remove('show');
+    toast('✅ Entry updated!');
+    loadHistory();
+  } catch(e) { toast('Error saving!', true); console.error(e); }
+}
+
+function confirmDelete(fbKey, type) {
+  if (confirm('Delete this entry? This cannot be undone!')) {
+    deleteEntryByKey(fbKey, type);
+  }
+}
+
+async function deleteEntryByKey(fbKey, type) {
+  try {
+    const path = type === 'sale' ? 'sales' : 'purchases';
+    await fbDelete(`${path}/${fbKey}`);
+    $('edit-modal').classList.remove('show');
+    toast('🗑️ Entry deleted!');
+    loadHistory();
+  } catch(e) { toast('Error deleting!', true); }
+}
+
+async function deleteEntry() {
+  confirmDelete($('edit-key').value, $('edit-type').value);
+}
+
+function closeModal(e) {
+  if (e.target.id === 'edit-modal') $('edit-modal').classList.remove('show');
+}
 
 // ── Refresh ──────────────────────────────────────────
 function refreshApp() {
