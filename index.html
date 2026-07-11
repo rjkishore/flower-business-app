@@ -655,6 +655,14 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
       <button class="fest-popup-close" onclick="closeFestPopup()">✓ புரிந்தது, மூடு</button>
     </div>
   </div>
+  <div class="sb">
+    <h3>ℹ️ App Info</h3>
+    <p style="font-size:12px;color:var(--txl);">
+      Build: <b id="build-stamp">11-Jul 06:03 UTC</b><br>
+      Service worker: <b id="sw-status">checking…</b>
+    </p>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -849,6 +857,20 @@ window.installApp = async function() {
 window.closeBanner = () => $('install-banner').style.display = 'none';
 
 // No service worker caching - always load fresh from network
+async function reportSW() {
+  const el = $('sw-status');
+  if (!el) return;
+  if (!('serviceWorker' in navigator)) { el.textContent = 'not supported'; return; }
+  const regs = await navigator.serviceWorker.getRegistrations();
+  if (regs.length === 0) {
+    el.textContent = 'none ✅';
+    el.style.color = '#2e7d32';
+  } else {
+    el.textContent = regs.length + ' still registered ⚠️ — fully close the app and reopen';
+    el.style.color = '#c62828';
+  }
+}
+
 if ('serviceWorker' in navigator) {
   // Unregister ALL existing service workers
   navigator.serviceWorker.getRegistrations().then(regs => {
@@ -2196,6 +2218,7 @@ async function init(){
   // what, so a failed read can never leave the app with an empty list.
   const ok = await loadFlowersAndCustomers();
   rebuildAll();
+  reportSW();
 
   setSync(ok ? 'ok' : 'err');
   // Check session (already logged in?)
