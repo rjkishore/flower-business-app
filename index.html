@@ -490,23 +490,33 @@ async function loadTodayPurchases() {
       Object.values(purs).forEach(p => {
         if (p.date === today) {
           const key = p.flower;
-          if (!todayPurchases[key]) todayPurchases[key] = { qty: 0, unit: p.unit || 'kg' };
-          todayPurchases[key].qty += p.qty || 0;
+          if (!todayPurchases[key]) {
+            todayPurchases[key] = { qty: 0, unit: p.unit || 'kg', buyPrice: p.buyPrice || 0 };
+          }
+          todayPurchases[key].qty     += p.qty      || 0;
+          todayPurchases[key].buyPrice = p.buyPrice  || 0; // price per unit
         }
       });
     }
     // Update hints for all flowers
     FLOWERS.forEach((fl, i) => {
       const hintTxt = $(`s_hint_txt_${i}`);
-      if (hintTxt) {
-        if (todayPurchases[fl]) {
-          const p = todayPurchases[fl];
-          hintTxt.textContent = `Today bought: ${p.qty} ${p.unit}`;
-        } else {
-          hintTxt.textContent = 'Not bought today';
-          const hint = $(`s_hint_${i}`);
-          if(hint) hint.querySelector('span').style.background = '#fce4ec';
-          if(hint) hint.querySelector('span').style.color = '#c62828';
+      const hint    = $(`s_hint_${i}`);
+      if (!hintTxt) return;
+
+      if (todayPurchases[fl]) {
+        const p = todayPurchases[fl];
+        // Show: bought 2 kg @ ₹45/kg → sell above ₹45
+        hintTxt.textContent = `Bought ${p.qty} ${p.unit} @ ₹${p.buyPrice}/${p.unit} — Sell above ₹${p.buyPrice}`;
+        if (hint) {
+          hint.querySelector('span').style.background = 'var(--tl)';
+          hint.querySelector('span').style.color = 'var(--teal)';
+        }
+      } else {
+        hintTxt.textContent = 'Not bought today';
+        if (hint) {
+          hint.querySelector('span').style.background = '#fce4ec';
+          hint.querySelector('span').style.color = '#c62828';
         }
       }
     });
