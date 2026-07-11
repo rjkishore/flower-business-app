@@ -634,6 +634,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
       <input type="text" id="new-flower" placeholder="Tamil or English name...">
       <button class="btn-add" onclick="addFlower()">Add</button>
     </div>
+    <button onclick="resetFlowers()" style="width:100%;margin-top:10px;padding:10px;background:none;border:1.5px solid var(--gm);color:var(--gm);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">🔄 Reset to Default Flowers</button>
   </div>
 </div>
 
@@ -1407,6 +1408,22 @@ async function addFlower(){
   inp.value='';buildFlowers('s-flowers','s');buildFlowers('p-flowers','p');buildSetup();
   toast('✅ Flower added!');
 }
+async function resetFlowers(){
+  if(!confirm('Reset to default 5 flowers? This will remove all current flowers!'))return;
+  FLOWERS = [
+    "கேந்தி பூ - Gendhi",
+    "சாமந்தி - Samanthi",
+    "கோழிக்கொண்டை பூ - Kozhikondai Poo",
+    "மூக்குத்தி ரோஜா - Mookuthi Rose",
+    "பன்னீர் ரோஜா - Panner Rose"
+  ];
+  await fbPut('config/flowers', FLOWERS);
+  buildFlowers('s-flowers','s');
+  buildFlowers('p-flowers','p');
+  buildSetup();
+  toast('✅ Flowers reset to default!');
+}
+
 async function removeFlower(i){
   if(!confirm('Delete "'+FLOWERS[i]+'"? Are you sure?'))return;
   FLOWERS.splice(i,1);
