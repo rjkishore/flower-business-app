@@ -70,9 +70,11 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .fl-chk{width:24px;height:24px;border-radius:7px;border:2px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;transition:all .2s;font-weight:700}
 .fl-item.on .fl-chk{background:var(--gm);border-color:var(--gm);color:#fff}
 .fl-nm{font-size:14px;flex:1;line-height:1.3}
-.fl-ins{display:none;padding:0 14px 12px;gap:8px;align-items:center}
+.fl-ins{display:none;padding:8px 12px 12px;gap:8px;flex-wrap:wrap}
 .fl-item.on .fl-ins{display:flex}
-.fl-ins input{flex:1;padding:10px;border:1.5px solid var(--gl);border-radius:9px;font-size:14px;background:#fff;outline:none;min-width:0}
+.fl-ins input{width:100%;padding:10px;border:1.5px solid var(--gl);border-radius:9px;font-size:14px;background:#fff;outline:none}
+.inp-box{flex:1;min-width:80px}
+.inp-box label{display:block;font-size:10px;color:#666;font-weight:600;margin-bottom:4px}
 .fl-ins input:focus{border-color:var(--gm)}
 .fl-ins label{font-size:10px;color:var(--txl);font-weight:600;white-space:nowrap}
 
@@ -385,10 +387,14 @@ function buildFlowers(cid,prefix) {
         <span class="fl-nm">${fl}</span>
       </div>
       <div class="fl-ins" id="${prefix}_in_${i}">
-        ${hasPur?`<div style="flex:1"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
-        <div style="flex:1"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">Unit</label><input type="text" id="${prefix}_u_${i}" placeholder="kg/bunch"></div>`
-        :`<div style="flex:1"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>`}
-        <div style="flex:1"><label style="font-size:10px;color:#666;display:block;margin-bottom:3px">₹ Price</label><input type="number" id="${prefix}_p_${i}" placeholder="0" min="0" inputmode="numeric" oninput="calcTot('${prefix}')"></div>
+        ${hasPur?`
+        <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
+        <div class="inp-box"><label>Unit</label><input type="text" id="${prefix}_u_${i}" placeholder="kg/bunch"></div>
+        <div class="inp-box"><label>₹ Price</label><input type="number" id="${prefix}_p_${i}" placeholder="0" min="0" inputmode="numeric" oninput="calcTot('${prefix}')"></div>
+        `:`
+        <div class="inp-box"><label>Qty</label><input type="number" id="${prefix}_q_${i}" placeholder="0" min="0" step="0.5" inputmode="decimal" oninput="calcTot('${prefix}')"></div>
+        <div class="inp-box"><label>₹ Price</label><input type="number" id="${prefix}_p_${i}" placeholder="0" min="0" inputmode="numeric" oninput="calcTot('${prefix}')"></div>
+        `}
       </div>`;
     c.appendChild(d);
   });
