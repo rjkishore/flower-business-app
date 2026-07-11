@@ -134,6 +134,16 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .badge{display:inline-flex;align-items:center;gap:6px;background:var(--gp);color:var(--gd);padding:9px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gl);margin-top:8px}
 .empty{text-align:center;padding:40px 20px;color:var(--txl)}
 .rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f0f0;}
+/* Festival notification */
+.festival-banner{border-radius:14px;padding:14px 16px;margin:14px 14px 0;box-shadow:0 4px 14px rgba(0,0,0,.15);}
+.festival-banner.today{background:linear-gradient(135deg,#e65100,#ff8f00);}
+.festival-banner.tomorrow{background:linear-gradient(135deg,#4a148c,#7b1fa2);}
+.festival-banner.none{background:linear-gradient(135deg,#1b5e20,#2e7d32);}
+.fest-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.fest-title{color:rgba(255,255,255,0.85);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;}
+.fest-name{font-size:16px;font-weight:800;color:white;margin-bottom:4px;}
+.fest-hint{font-size:12px;color:rgba(255,255,255,0.8);}
+.fest-icon{font-size:28px;}
 .rank-item:last-child{border-bottom:none;}
 .rank-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
 .rank-1{background:#ffd700;color:#7d5a00;}
@@ -254,6 +264,9 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 <!-- Scrollable content -->
 <div class="scroll-area" id="scroll-area">
 <div class="ptr" id="ptr-indicator"><span class="ptr-spin"></span>Refreshing...</div>
+
+<!-- Festival notification banner -->
+<div id="festival-banner" style="display:none;"></div>
 
 <!-- ══ SALE ══ -->
 <div class="pg on" id="pg-sale">
@@ -1566,6 +1579,8 @@ function init(){
   buildPayCustDropdown();
   buildSetup();
   setSync('ok');
+  // Check festivals
+  checkFestivals();
   // Load today profit meter and purchase hints
   loadTodayProfit();
   loadTodayPurchases();
