@@ -658,7 +658,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
   <div class="sb">
     <h3>ℹ️ App Info</h3>
     <p style="font-size:12px;color:var(--txl);">
-      Build: <b id="build-stamp">11-Jul 06:03 UTC</b><br>
+      Build: <b id="build-stamp">11-Jul 06:23 UTC</b><br>
       Service worker: <b id="sw-status">checking…</b>
     </p>
   </div>
@@ -1434,30 +1434,56 @@ function buildSetup(){
   $('cust-manage').innerHTML=CUSTOMERS.map((c,i)=>`<div class="list-item"><span>${c}</span><button class="del-btn" onclick="removeCust(${i})">✕</button></div>`).join('');
   $('flower-manage').innerHTML=FLOWERS.map((f,i)=>`<div class="list-item"><span>${f}</span><button class="del-btn" onclick="removeFlower(${i})">✕</button></div>`).join('');
 }
+// Every list change writes to Firebase FIRST and only updates the app once the
+// write is confirmed. Never mutate the local list before the write succeeds --
+// a failed write would otherwise leave a phantom entry that is in memory but
+// not in Firebase and not on screen.
+async function commitCustomers(next, okMsg) {
+  try {
+    await fbPut('config/customers', next);
+  } catch (e) {
+    console.error(e);
+    toast('Could not save. Check internet.', true);
+    setSync('err');
+    return false;
+  }
+  CUSTOMERS = next;
+  rebuildPreserving();
+  if (okMsg) toast(okMsg);
+  return true;
+}
+
+async function commitFlowers(next, okMsg) {
+  try {
+    await fbPut('config/flowers', next);
+  } catch (e) {
+    console.error(e);
+    toast('Could not save. Check internet.', true);
+    setSync('err');
+    return false;
+  }
+  FLOWERS = next;
+  rebuildPreserving();
+  if (okMsg) toast(okMsg);
+  return true;
+}
+
 async function addCustomer(){
-  const inp=$('new-cust'),n=inp.value.trim();
-  if(!n)return;
-  if(CUSTOMERS.includes(n)){toast('Customer already exists!',true);return;}
-  CUSTOMERS.push(n);
-  await fbPut('config/customers', CUSTOMERS);
-  inp.value=''; rebuildAll();
-  toast('✅ Customer added!');
+  const inp = $('new-cust'), n = inp.value.trim();
+  if (!n) return;
+  if (CUSTOMERS.includes(n)) { toast('Customer already exists!', true); return; }
+  if (await commitCustomers([...CUSTOMERS, n], '✅ Customer added!')) inp.value = '';
 }
 async function removeCust(i){
-  if(!confirm('Delete "'+CUSTOMERS[i]+'"? Are you sure?'))return;
-  CUSTOMERS.splice(i,1);
-  await fbPut('config/customers', CUSTOMERS);
-  rebuildAll();
-  toast('Customer deleted!');
+  const name = CUSTOMERS[i];
+  if (!confirm('Delete "' + name + '"? Are you sure?')) return;
+  await commitCustomers(CUSTOMERS.filter((_, idx) => idx !== i), 'Customer deleted!');
 }
 async function addFlower(){
-  const inp=$('new-flower'),n=inp.value.trim();
-  if(!n)return;
-  if(FLOWERS.includes(n)){toast('Flower already exists!',true);return;}
-  FLOWERS.push(n);
-  await fbPut('config/flowers', FLOWERS);
-  inp.value=''; rebuildAll();
-  toast('✅ Flower added!');
+  const inp = $('new-flower'), n = inp.value.trim();
+  if (!n) return;
+  if (FLOWERS.includes(n)) { toast('Flower already exists!', true); return; }
+  if (await commitFlowers([...FLOWERS, n], '✅ Flower added!')) inp.value = '';
 }
 async function debugFirebase(){
   const out = $('debug-output');
@@ -1490,37 +1516,14 @@ async function debugFirebase(){
 }
 
 async function clearAllCustomers(){
-  if(!confirm('Delete ALL customers? This cannot be undone!'))return;
-  CUSTOMERS = [];
-  await fbPut('config/customers', []);
-  rebuildAll();
-  toast('✅ All customers cleared!');
+  if (!confirm('Delete ALL customers? This cannot be undone!')) return;
+  await commitCustomers([], '✅ All customers cleared!');
 }
 
-async function resetFlowers(){
-  if(!confirm('Reset to default 5 flowers? This will remove all current flowers!'))return;
-  FLOWERS = [
-    "கேந்தி பூ - Gendhi",
-    "சாமந்தி - Samanthi",
-    "கோழிக்கொண்டை பூ - Kozhikondai Poo",
-    "மூக்குத்தி ரோஜா - Mookuthi Rose",
-    "பன்னீர் ரோஜா - Panner Rose",
-    "மல்லிகை - Jasmine",
-    "கனகாம்பரம் - Crissanda",
-    "சம்பங்கி - Tuberose",
-    "முல்லை - Mullai"
-  ];
-  await fbPut('config/flowers', FLOWERS);
-  rebuildAll();
-  toast('✅ Flowers reset to default!');
-}
 
 async function removeFlower(i){
-  if(!confirm('Delete "'+FLOWERS[i]+'"? Are you sure?'))return;
-  FLOWERS.splice(i,1);
-  await fbPut('config/flowers', FLOWERS);
-  rebuildAll();
-  toast('Flower deleted!');
+  if (!confirm('Delete "' + FLOWERS[i] + '"? Are you sure?')) return;
+  await commitFlowers(FLOWERS.filter((_, idx) => idx !== i), 'Flower deleted!');
 }
 
 // ── Period selector ───────────────────────────────────
@@ -1703,15 +1706,11 @@ function closeQuickCust(e) {
 
 async function saveQuickCustomer() {
   const name = $('quick-cust-name').value.trim();
-  if(!name) { toast('Please enter customer name!', true); return; }
-  if(CUSTOMERS.includes(name)) { toast('Customer already exists!', true); return; }
-  CUSTOMERS.push(name);
-  await fbPut('config/customers', CUSTOMERS);
-  rebuildAll();
-  // Auto select the new customer
-  $('s-cust').value = name;
+  if (!name) { toast('Please enter customer name!', true); return; }
+  if (CUSTOMERS.includes(name)) { toast('Customer already exists!', true); return; }
+  if (!await commitCustomers([...CUSTOMERS, name], '✅ ' + name + ' added!')) return;
+  $('s-cust').value = name;                 // auto-select the new customer
   $('quick-cust-modal').classList.remove('show');
-  toast('✅ ' + name + ' added!');
 }
 
 // ── Activity Log ──────────────────────────────────────
