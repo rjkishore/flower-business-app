@@ -161,6 +161,26 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
 .fest-popup{background:white;border-radius:20px;padding:0;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.3);animation:popIn 0.3s ease;}
 @keyframes popIn{from{transform:scale(0.8);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+/* Activity log */
+.log-item{padding:10px 0;border-bottom:1px solid #f0f0f0;display:flex;gap:10px;align-items:flex-start;}
+.log-item:last-child{border-bottom:none;}
+.log-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;color:white;}
+.log-av-aru{background:#7b1fa2;}
+.log-av-kishore{background:var(--gm);}
+.log-av-ammu{background:#1565c0;}
+.log-content{flex:1;}
+.log-name{font-size:12px;font-weight:700;color:var(--gd);}
+.log-action{font-size:13px;color:#333;margin-top:2px;}
+.log-time{font-size:11px;color:var(--txl);margin-top:2px;}
+.log-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px;}
+.badge-sale{background:#e8f5e9;color:var(--gm);}
+.badge-buy{background:#e3f2fd;color:#1565c0;}
+.badge-pay{background:#fff3e0;color:#e65100;}
+.badge-edit{background:#fce4ec;color:#c62828;}
+.badge-del{background:#f3e5f5;color:#7b1fa2;}
+
+/* Activity log tab hidden for staff */
+#tb-activity { display:none; }
 .fest-popup-header{padding:24px 20px 16px;text-align:center;}
 .fest-popup-header.today-hdr{background:linear-gradient(135deg,#e65100,#ff8f00);}
 .fest-popup-header.tomorrow-hdr{background:linear-gradient(135deg,#4a148c,#7b1fa2);}
@@ -336,6 +356,7 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
     <button class="tb"    onclick="showTab('history')" id="tb-history"> <span class="ti">📋</span>History</button>
     <button class="tb"    onclick="showTab('summary')" id="tb-summary"> <span class="ti">📊</span>Summary</button>
     <button class="tb"    onclick="showTab('payments')" id="tb-payments"> <span class="ti">💳</span>Pay</button>
+    <button class="tb"    onclick="showTab('activity')" id="tb-activity" style="display:none;"> <span class="ti">📜</span>Log</button>
     <button class="tb"    onclick="showTab('setup')"   id="tb-setup">   <span class="ti">⚙️</span>Setup</button>
   </div>
 </div>
@@ -574,6 +595,21 @@ body{font-family:-apple-system,'Segoe UI',Arial,sans-serif;background:var(--gb);
     </div>
   </div>
 
+</div>
+
+<!-- ══ ACTIVITY LOG ══ -->
+<div class="pg" id="pg-activity">
+  <div class="card">
+    <div class="ct">📜 Activity Log — Who Did What</div>
+    <p style="font-size:12px;color:var(--txl);margin-bottom:10px;">இந்த tab-ல் யார் என்ன சேர்த்தார்கள், திருத்தினார்கள் என்பதை காணலாம்.</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="mb on" id="log-all"  onclick="filterLog('all')" style="flex:1;padding:9px;border:2px solid var(--gl);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">அனைத்தும்</button>
+      <button class="mb" id="log-aru"     onclick="filterLog('Aru')" style="flex:1;padding:9px;border:2px solid var(--gl);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;">Aru மட்டும்</button>
+    </div>
+    <div id="activity-list">
+      <p style="font-size:13px;color:#999;text-align:center;padding:20px;">Loading...</p>
+    </div>
+  </div>
 </div>
 
 <!-- ══ SETUP ══ -->
@@ -946,6 +982,7 @@ function showTab(t) {
   if(t==='summary') loadSummary();
   if(t==='sale') loadTodayPurchases();
   if(t==='payments') { loadOutstanding(); loadPaymentHistory(); }
+  if(t==='activity') { loadActivityLog(); }
 }
 
 // Today
@@ -1101,7 +1138,7 @@ async function submitPurchase() {
   setSync('saving');
   try {
     for(const p of purchases)
-      await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,buyPrice:p.price,totalCost:p.total,ts:Date.now()});
+      await fbPost('purchases',{date:dateVal,flower:p.name,unit:p.unit,qty:p.qty,buyPrice:p.price,totalCost:p.total,ts:Date.now(),addedBy:sessionStorage.getItem('fb_name')||'Unknown'});
     setSync('ok'); toast('✅ Purchase saved!'); resetPurchase(); loadTodayProfit(); loadTodayPurchases();
   } catch(e){setSync('err');toast('Error! Check internet.',true);}
   btn.disabled=false; btn.innerHTML='✅ Add Purchase';
@@ -1394,7 +1431,8 @@ async function submitPayment() {
     await fbPost('payments', {
       customer, date, amount,
       method: payMethod,
-      notes, ts: Date.now()
+      notes, ts: Date.now(),
+      addedBy: sessionStorage.getItem('fb_name')||'Unknown'
     });
     toast('✅ Payment recorded!');
     // Reset form
@@ -1513,6 +1551,91 @@ function saveQuickCustomer() {
   $('s-cust').value = name;
   $('quick-cust-modal').classList.remove('show');
   toast('✅ ' + name + ' added!');
+}
+
+// ── Activity Log ──────────────────────────────────────
+let logFilter = 'all';
+
+function filterLog(filter) {
+  logFilter = filter;
+  $('log-all').className = 'mb' + (filter==='all' ? ' on' : '');
+  $('log-aru').className = 'mb' + (filter==='Aru' ? ' on' : '');
+  // re-render
+  renderActivityLog(window._activityData || []);
+}
+
+async function loadActivityLog() {
+  const el = $('activity-list');
+  if (!el) return;
+  el.innerHTML = '<p style="font-size:13px;color:#999;text-align:center;padding:20px;">Loading...</p>';
+  try {
+    const [sales, purs, payments, expenses] = await Promise.all([
+      fbGet('sales'), fbGet('purchases'), fbGet('payments'), fbGet('expenses')
+    ]);
+
+    let logs = [];
+
+    if (sales) Object.entries(sales).forEach(([k,s]) => {
+      if (s.addedBy) logs.push({
+        type:'sale', user:s.addedBy, ts:s.ts||0,
+        action:`${s.customer} க்கு ${s.flower?.split('-')[0]?.trim()||''} விற்பனை`,
+        amount: s.price||0, key:k
+      });
+    });
+
+    if (purs) Object.entries(purs).forEach(([k,p]) => {
+      if (p.addedBy) logs.push({
+        type:'buy', user:p.addedBy, ts:p.ts||0,
+        action:`${p.flower?.split('-')[0]?.trim()||''} வாங்கியது`,
+        amount: p.totalCost||0, key:k
+      });
+    });
+
+    if (payments) Object.entries(payments).forEach(([k,p]) => {
+      if (p.addedBy) logs.push({
+        type:'pay', user:p.addedBy, ts:p.ts||0,
+        action:`${p.customer} ₹${p.amount} செலுத்தினார்`,
+        amount: p.amount||0, key:k
+      });
+    });
+
+    logs.sort((a,b) => b.ts - a.ts);
+    window._activityData = logs;
+    renderActivityLog(logs);
+  } catch(e) {
+    el.innerHTML = '<p style="font-size:13px;color:red;text-align:center;padding:20px;">Error loading log!</p>';
+  }
+}
+
+function renderActivityLog(logs) {
+  const el = $('activity-list');
+  if (!el) return;
+
+  const filtered = logFilter === 'all' ? logs : logs.filter(l => l.user === logFilter);
+
+  if (filtered.length === 0) {
+    el.innerHTML = '<p style="font-size:13px;color:#999;text-align:center;padding:20px;">No activity found!</p>';
+    return;
+  }
+
+  const typeLabels = { sale:'விற்பனை', buy:'வாங்கியது', pay:'பணம்', edit:'திருத்தம்', del:'நீக்கம்' };
+  const typeBadges = { sale:'badge-sale', buy:'badge-buy', pay:'badge-pay', edit:'badge-edit', del:'badge-del' };
+
+  el.innerHTML = filtered.slice(0, 50).map(log => {
+    const d = new Date(log.ts);
+    const timeStr = log.ts ? d.toLocaleDateString('en-IN') + ' ' + d.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '';
+    const userLower = (log.user||'').toLowerCase();
+    const avClass = userLower.includes('aru') ? 'log-av-aru' : userLower.includes('ammu') ? 'log-av-ammu' : 'log-av-kishore';
+    const initial = (log.user||'?')[0].toUpperCase();
+    return `<div class="log-item">
+      <div class="log-avatar ${avClass}">${initial}</div>
+      <div class="log-content">
+        <div class="log-name">${log.user||'Unknown'} <span class="log-badge ${typeBadges[log.type]||'badge-sale'}">${typeLabels[log.type]||log.type}</span></div>
+        <div class="log-action">${log.action}</div>
+        <div class="log-time">${timeStr}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── Edit & Delete Payments ────────────────────────────
@@ -1810,10 +1933,15 @@ function checkFestivals(){
 
 // ── PIN Login ─────────────────────────────────────────
 const USERS = {
-  'kishore': { pin:'3110', name:'Kishore' },
-  'ammu':    { pin:'0709', name:'Ammu'    },
-  'aru':     { pin:'0907', name:'Aru'     }
+  'kishore': { pin:'3110', name:'Kishore', role:'owner' },  // sees activity log
+  'ammu':    { pin:'0709', name:'Ammu',    role:'owner' },  // sees activity log
+  'aru':     { pin:'0907', name:'Aru',     role:'staff'  }  // normal access, no activity log
 };
+
+function isOwner() {
+  const user = sessionStorage.getItem('fb_user');
+  return USERS[user] && USERS[user].role === 'owner';
+}
 
 let currentUser   = 'kishore';
 let currentPin    = '';
@@ -1861,11 +1989,15 @@ function checkPin() {
     // Correct! Save session and show app
     sessionStorage.setItem('fb_user', currentUser);
     sessionStorage.setItem('fb_name', user.name);
+    sessionStorage.setItem('fb_role', user.role);
     $('pin-screen').style.display = 'none';
     pinAttempts = 0;
-    // Update header with user name
+    // Update header with user name and role indicator
     const h1 = document.querySelector('.hdr h1');
-    if (h1) h1.innerHTML = '🌸 ஆறுமுகம் <span style="font-size:12px;opacity:0.7;">· '+user.name+'</span>';
+    const roleTag = user.role==='owner' ? '👑' : '👤';
+    if (h1) h1.innerHTML = '🌸 ஆறுமுகம் <span style="font-size:12px;opacity:0.7;">· '+roleTag+' '+user.name+'</span>';
+    // Show/hide admin features
+    applyRolePermissions();
   } else {
     // Wrong PIN
     pinAttempts++;
@@ -1896,8 +2028,19 @@ function checkSession() {
   if (user && USERS[user]) {
     $('pin-screen').style.display = 'none';
     const h1 = document.querySelector('.hdr h1');
-    if (h1) h1.innerHTML = '🌸 ஆறுமுகம் <span style="font-size:12px;opacity:0.7;">· '+name+'</span>';
+    const roleTag = USERS[user].role==='owner' ? '👑' : '👤';
+    if (h1) h1.innerHTML = '🌸 ஆறுமுகம் <span style="font-size:12px;opacity:0.7;">· '+roleTag+' '+name+'</span>';
+    applyRolePermissions();
   }
+}
+
+// ── Role-based Permissions ────────────────────────────
+function applyRolePermissions() {
+  const owner = isOwner();
+  document.body.classList.toggle('is-owner', owner);
+  // Show/hide activity log tab
+  const actTab = $('tb-activity');
+  if (actTab) actTab.style.display = owner ? 'flex' : 'none';
 }
 
 function init(){
