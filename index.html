@@ -2203,6 +2203,114 @@ function applyRolePermissions() {
   if (actTab) actTab.style.display = owner ? 'flex' : 'none';
 }
 
+
+// ── Live sync ─────────────────────────────────────────
+// Firebase RTDB streams changes over Server-Sent Events. Every device holding
+// the app open gets pushed an event the moment anyone writes, so no refresh
+// is ever needed.
+const liveStreams = [];
+
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+function watchPath(path, onChange) {
+  if (!('EventSource' in window)) return;
+  let es;
+  try { es = new EventSource(`${RTDB}/${path}.json`); }
+  catch (e) { console.error('stream failed', path, e); return; }
+
+  es.addEventListener('put',   onChange);
+  es.addEventListener('patch', onChange);
+  es.addEventListener('open',  () => setSync('ok'));
+  es.onerror = () => setSync('err');   // EventSource reconnects on its own
+  liveStreams.push(es);
+}
+
+// A live update must never destroy half-finished data entry. Capture what the
+// user has typed (keyed by flower NAME, since list indices can shift), rebuild,
+// then put it back.
+function captureEntry(prefix) {
+  const state = {};
+  FLOWERS.forEach((fl, i) => {
+    const item = $(`${prefix}_i_${i}`);
+    if (!item) return;
+    const q = $(`${prefix}_q_${i}`), p = $(`${prefix}_p_${i}`), u = $(`${prefix}_u_${i}`);
+    const on = item.classList.contains('on');
+    if (on || (q && q.value) || (p && p.value)) {
+      state[fl] = {
+        on,
+        qty:   q ? q.value : '',
+        price: p ? p.value : '',
+        unit:  u ? u.value : 'kg'
+      };
+    }
+  });
+  return state;
+}
+
+function restoreEntry(prefix, state) {
+  FLOWERS.forEach((fl, i) => {
+    const s = state[fl];
+    if (!s) return;
+    const item = $(`${prefix}_i_${i}`);
+    if (!item) return;
+    if (s.on) {
+      item.classList.add('on');
+      const chk = $(`${prefix}_c_${i}`);
+      if (chk) chk.textContent = '✓';
+    }
+    const q = $(`${prefix}_q_${i}`), p = $(`${prefix}_p_${i}`), u = $(`${prefix}_u_${i}`);
+    if (q) q.value = s.qty;
+    if (p) p.value = s.price;
+    if (u && s.unit) setUnit(prefix, i, s.unit);
+  });
+  calcTot(prefix);
+}
+
+function rebuildPreserving() {
+  const saleEntry = captureEntry('s');
+  const buyEntry  = captureEntry('p');
+  const saleCust  = $('s-cust')   ? $('s-cust').value   : '';
+  const payCust   = $('pay-cust') ? $('pay-cust').value : '';
+
+  rebuildAll();
+
+  restoreEntry('s', saleEntry);
+  restoreEntry('p', buyEntry);
+  if ($('s-cust')   && CUSTOMERS.includes(saleCust)) $('s-cust').value   = saleCust;
+  if ($('pay-cust') && CUSTOMERS.includes(payCust))  $('pay-cust').value = payCust;
+}
+
+// Someone added/removed a flower or customer on another device.
+const onConfigChanged = debounce(async () => {
+  const before = JSON.stringify([FLOWERS, CUSTOMERS]);
+  await loadFlowersAndCustomers();
+  if (JSON.stringify([FLOWERS, CUSTOMERS]) === before) return;  // no real change
+  rebuildPreserving();
+  toast('🔄 List updated');
+}, 300);
+
+// Someone recorded a sale / purchase / payment on another device.
+const onDataChanged = debounce(() => {
+  const active = document.querySelector('.tb.on');
+  const t = active ? active.id.replace('tb-', '') : 'sale';
+  if (t === 'history')  loadHistory();
+  if (t === 'summary')  loadSummary();
+  if (t === 'payments') { loadOutstanding(); loadPaymentHistory(); }
+  if (t === 'activity') loadActivityLog();
+  if (t === 'sale')     loadTodayPurchases();   // refreshes remaining-stock hints
+  loadTodayProfit();
+}, 400);
+
+function startLiveSync() {
+  watchPath('config',    onConfigChanged);
+  watchPath('sales',     onDataChanged);
+  watchPath('purchases', onDataChanged);
+  watchPath('payments',  onDataChanged);
+}
+
 async function init(){
   setToday();
   // Set default dates for summary pickers
@@ -2219,6 +2327,7 @@ async function init(){
   const ok = await loadFlowersAndCustomers();
   rebuildAll();
   reportSW();
+  startLiveSync();
 
   setSync(ok ? 'ok' : 'err');
   // Check session (already logged in?)
