@@ -788,44 +788,36 @@ async function loadFlowersAndCustomers() {
       fbGet('config/customers')
     ]);
 
-    // Convert Firebase object back to array
-    const flArr = fbToArray(fbFlowers);
-    const cuArr = fbToArray(fbCustomers);
+    // Convert Firebase data to array safely
+    // Firebase can return: null, [], ["a","b"], or {"0":"a","1":"b"}
+    function toArr(data) {
+      if (data === null || data === undefined) return null;
+      if (Array.isArray(data)) return data.filter(x => x); // remove nulls
+      if (typeof data === 'object') return Object.values(data).filter(x => x);
+      return null;
+    }
+
+    const flArr = toArr(fbFlowers);
+    const cuArr = toArr(fbCustomers);
 
     if (flArr && flArr.length > 0) {
       FLOWERS = flArr;
-    } else if (!fbFlowers) {
-      // First time - save defaults
+    } else if (fbFlowers === null) {
       await fbPut('config/flowers', FLOWERS);
     }
 
-    if (cuArr !== null && cuArr !== undefined) {
-      CUSTOMERS = cuArr; // Use whatever Firebase has (even empty [])
-    } else {
-      // First time - save empty list
-      CUSTOMERS = [];
+    if (cuArr !== null) {
+      CUSTOMERS = cuArr;
+    } else if (fbCustomers === null) {
       await fbPut('config/customers', []);
     }
 
-    console.log('Loaded customers from Firebase:', CUSTOMERS);
-
-    // Rebuild ALL UI with Firebase data
+    // Rebuild ALL UI
     buildFlowers('s-flowers','s');
     buildFlowers('p-flowers','p');
     buildCusts();
     buildPayCustDropdown();
     buildSetup();
-    
-    // Also rebuild sale customer dropdown and payment dropdown
-    const sCust = $('s-cust');
-    if (sCust) {
-      sCust.innerHTML = '<option value="">-- Select Customer --</option>';
-      CUSTOMERS.forEach(c => {
-        const o = document.createElement('option');
-        o.value = c; o.textContent = c;
-        sCust.appendChild(o);
-      });
-    }
   } catch(e) {
     console.log('Error loading flowers/customers:', e);
   }
